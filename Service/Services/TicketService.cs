@@ -1,0 +1,376 @@
+using Domain.Entity;
+using Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+
+namespace TicketingSystem.Services
+{
+    public class TicketService : ITicketService
+    {
+        private readonly ApplicationDbContext _context;
+        private readonly IQRCodeService _qrCodeService;
+        private readonly INotificationService _notificationService;
+        private readonly IGoogleWalletService3 _googleWalletService;
+        private readonly IAppleWalletService _appleWalletService;
+        IConfiguration configuration;
+
+        public TicketService(ApplicationDbContext context, IQRCodeService qrCodeService, INotificationService notificationService, IGoogleWalletService3 googleWalletService, IAppleWalletService appleWalletService, IConfiguration configuration)
+        {
+            _context = context;
+            _qrCodeService = qrCodeService;
+            _notificationService = notificationService;
+            _googleWalletService = googleWalletService;
+            _appleWalletService = appleWalletService;
+            this.configuration = configuration;
+        }
+
+
+        // Added Google Wallet integration method
+        public async Task<string> AddToGoogleWalletAsync(string ticketNumber, string? eventName = null, string? eventLocation = null, DateTime? eventDate = null)
+        {
+            var ticket = await GetTicketByNumberAsync(ticketNumber);
+            if (ticket == null)
+                throw new ArgumentException("Ticket not found");
+
+            if (ticket.OrderItem.Order.Status != OrderStatus.Paid)
+                throw new InvalidOperationException("Ticket must be from a paid order");
+
+            if (ticket.ExpiryDate <= DateTime.UtcNow)
+                throw new InvalidOperationException("Ticket has expired");
+
+            // Use provided event details or defaults
+            var finalEventName = eventName ?? ticket.OrderItem.Product?.ProductName ?? "Event";
+            var finalEventLocation = eventLocation ?? "Event Location";
+            var finalEventDate = eventDate ?? ticket.PurchaseDate;
+
+            //// Create event class if needed (in production, you'd cache this)
+            //await _googleWalletService.CreateEventTicketClassAsync(finalEventName, finalEventLocation, finalEventDate);
+
+            //// Create the wallet pass URL
+            //var walletUrl =   _googleWalletService.CreateEventTicketPassAsync(ticket);
+
+            //var google = new GoogleWalletService3(configuration);
+            var walletUrl = _googleWalletService.CreateTicketWalletLink(ticket);
+            return walletUrl;
+        }
+
+        // Added Apple Wallet integration method
+        public async Task<string> AddToAppleWalletAsync(string ticketNumber, string? eventName = null, string? eventLocation = null, DateTime? eventDate = null)
+        {
+            var ticket = await GetTicketByNumberAsync(ticketNumber);
+            if (ticket == null)
+                throw new ArgumentException("Ticket not found");
+
+            if (ticket.OrderItem.Order.Status != OrderStatus.Paid)
+                throw new InvalidOperationException("Ticket must be from a paid order");
+
+            if (ticket.ExpiryDate <= DateTime.UtcNow)
+                throw new InvalidOperationException("Ticket has expired");
+
+            // Generate the Apple Wallet pass
+            var passData = await _appleWalletService.CreateEventTicketPassAsync(ticket);
+
+            // In a real implementation, you'd save this to a file server or blob storage
+            // and return the download URL
+            var downloadUrl = await _appleWalletService.GetPassDownloadUrlAsync(ticketNumber);
+            return downloadUrl;
+        }
+
+
+        public async Task<IEnumerable<Ticket>> GenerateTicketsAsync(int orderId)
+        {
+            var order = await _context.Orders
+                .Include(o => o.User)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Product)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+
+            if (order == null)
+                throw new ArgumentException("Order not found");
+
+            if (order.Status != OrderStatus.Paid)
+                throw new InvalidOperationException("Order must be paid before generating tickets");
+
+            // Check if tickets already exist for this order
+            var existingTickets = await _context.Tickets
+                .Where(t => t.OrderItem.Order.Id == orderId)
+                .ToListAsync();
+
+            if (existingTickets.Any())
+                throw new InvalidOperationException("Tickets have already been generated for this order");
+
+            var tickets = new List<Ticket>();
+
+            // Generate tickets based on order items
+            foreach (var orderItem in order.OrderItems)
+            {
+                
+                    var ticketNumber = GenerateTicketNumber();
+                    var memberName = $"{order.BillingFirstName} {order.BillingLastName}";
+                    var membershipNumber = GenerateMembershipNumber(order.UserId);
+
+                    var qrCode = _qrCodeService.GenerateTicketQRCode(ticketNumber, orderId, memberName);
+
+                    var ticket = new Ticket
+                    {
+                        OrderItemId = orderItem.Id,
+                        TicketNumber = ticketNumber,
+                        MemberName = memberName,
+                        MembershipNumber = membershipNumber,
+                        PurchaseDate = DateTime.UtcNow,
+                        ExpiryDate = DateTime.UtcNow.AddDays(30), // Default 30 days validity
+                        QRCode = qrCode,
+                        DeliveryMethod = TicketDelivery.Email
+                    };
+
+                    tickets.Add(ticket);
+                //}
+            }
+            try
+            {
+
+                _context.Tickets.AddRange(tickets);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+
+            return tickets;
+        }
+
+        public async Task<Ticket?> GetTicketByNumberAsync(string ticketNumber)
+        {
+            return await _context.Tickets
+                .Include(t => t.OrderItem)
+                    .ThenInclude(o => o.Order)
+                    .ThenInclude(o => o.User)
+                    
+                    .Include(t=>t.OrderItem)
+                    .ThenInclude(o=>o.Product)
+                    //.ThenInclude(o=>o.p)
+                .FirstOrDefaultAsync(t => t.TicketNumber == ticketNumber);
+        }
+
+        public async Task<IEnumerable<Ticket>> GetUserTicketsAsync(int userId)
+        {
+             //var item = await _context.Orders
+             //   .Include(o=>o.OrderItems)
+             //   .ThenInclude(o=>o.Tickets)
+             //   .Where(o => o.UserId == userId).Select(o=>o.OrderItems.ti).ToListAsync();
+
+
+            //var item = await _context.OrderItems
+            //    .Include(oi => oi.Order)
+            //        .ThenInclude(o => o.User)
+            //    .Include(oi => oi.Tickets)
+            //    .Where(oi => oi.Order.UserId == userId)
+            //    .Select(oi => oi.Tickets)
+            //    .ToListAsync();
+
+
+            //return await _context.Tickets
+            //    .Include(t => t.Order)
+            //        .ThenInclude(o => o.Order)
+            //        .ThenInclude(Order => Order.User)
+            //    //.Include(oi => oi.)
+            //    .Where(t => t.Order.Order.UserId == userId)
+            //    //.OrderByDescending(t => t.PurchaseDate)
+            //    .ToListAsync();            //var item = await _context.OrderItems
+            //    .Include(oi => oi.Order)
+            //        .ThenInclude(o => o.User)
+            //    .Include(oi => oi.Tickets)
+            //    .Where(oi => oi.Order.UserId == userId)
+            //    .Select(oi => oi.Tickets)
+            //    .ToListAsync();
+
+
+            //return await _context.Tickets
+            //    .Include(t => t.Order)
+            //        .ThenInclude(o => o.Order)
+            //        .ThenInclude(Order => Order.User)
+            //    //.Include(oi => oi.)
+            //    .Where(t => t.Order.Order.UserId == userId)
+            //    //.OrderByDescending(t => t.PurchaseDate)
+            //    .ToListAsync();
+            return await _context.Tickets
+                .Where(t => t.OrderItem.Order.UserId == userId)
+                .ToListAsync();
+
+        }
+
+        public async Task<bool> SendTicketAsync(int ticketId, TicketDelivery deliveryMethod, string? Email = null)
+        {
+            var ticket = await _context.Tickets
+                .Include(t => t.OrderItem)
+                    //.ThenInclude(o => o.Order)
+                    //.ThenInclude(o => o.User)
+                .FirstOrDefaultAsync(t => t.Id == ticketId);
+
+            if (ticket == null)
+                return false;
+
+            var user = ticket.OrderItem.Order.User;
+            if (user == null)
+                return false;
+
+            bool success = false;
+
+            try
+            {
+                switch (deliveryMethod)
+                {
+                    case TicketDelivery.Email:
+                        success = await _notificationService.SendTicketByEmailAsync(
+                            Email,
+                            ticket.TicketNumber,
+                            ticket.QRCode,
+                            ticket.MemberName,
+                            ticket.ExpiryDate);
+                        break;
+
+                    case TicketDelivery.Whatsapp:
+                        success = await _notificationService.SendTicketByWhatsAppAsync(
+                            user.Phone,
+                            ticket.TicketNumber,
+                            ticket.QRCode,
+                            ticket.MemberName,
+                            ticket.ExpiryDate);
+                        break;
+
+                    case TicketDelivery.Both:
+                        var emailSuccess = await _notificationService.SendTicketByEmailAsync(
+                            user.Email,
+                            ticket.TicketNumber,
+                            ticket.QRCode,
+                            ticket.MemberName,
+                            ticket.ExpiryDate);
+
+                        var whatsappSuccess = await _notificationService.SendTicketByWhatsAppAsync(
+                            user.Phone,
+                            ticket.TicketNumber,
+                            ticket.QRCode,
+                            ticket.MemberName,
+                            ticket.ExpiryDate);
+
+                        success = emailSuccess || whatsappSuccess;
+                        break;
+
+                    case TicketDelivery.None:
+                        success = true; // No delivery required
+                        break;
+                }
+
+                if (success)
+                {
+                    ticket.DeliveryMethod = deliveryMethod;
+                    ticket.SentAt = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                }
+
+                return success;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> ValidateTicketAsync(string ticketNumber)
+        {
+            var ticket = await GetTicketByNumberAsync(ticketNumber);
+
+            if (ticket == null)
+                return false;
+
+            // Check if ticket is expired
+            if (ticket.ExpiryDate <= DateTime.UtcNow)
+                return false;
+
+            // Check if order is paid
+            if (ticket.OrderItem.Order.Status != OrderStatus.Paid)
+                return false;
+
+            return true;
+        }
+
+        public async Task<IEnumerable<Ticket>> GetTicketsByOrderAsync(int orderId)
+        {
+            //var item = await _context.OrderItems
+            //   .Include(oi => oi.Order)
+            //   .ThenInclude(o => o.User)
+            //   .Include(oi => oi.Product)
+            //   .Include(oi => oi.Tickets)
+            //   .Where(oi => oi.OrderId == orderId)
+            //   .Select(oi => oi.Tickets)
+            //   .ToListAsync();
+
+
+            var item = await _context.Tickets
+                .Include(t => t.OrderItem)
+                    .ThenInclude(oi => oi.Order)
+                        .ThenInclude(o => o.User)
+                .Include(t => t.OrderItem)
+                    .ThenInclude(oi => oi.Product)
+                .Where(t => t.OrderItem.OrderId == orderId)
+                .ToListAsync();
+            return item;
+        }
+
+        private static string GenerateTicketNumber()
+        {
+            var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+            var random = new Random().Next(1000, 9999);
+            return $"TKT{timestamp}{random}";
+        }
+
+        private static string GenerateMembershipNumber(int userId)
+        {
+            return $"MEM{userId:D6}{DateTime.UtcNow.Year}";
+        }
+
+        public async Task<Ticket> GenerateMemberTicketsAsync(int MemberId)
+        {
+            var order = await _context.MemberShip
+                .Include(o => o.User)
+                .FirstOrDefaultAsync(o => o.Id == MemberId);
+
+            if (order == null)
+                throw new ArgumentException("Order not found");
+
+            if (order.Status != OrderStatus.Paid)
+                throw new InvalidOperationException("Order must be paid before generating tickets");
+
+            // Check if tickets already exist for this order
+            var existingTickets = await _context.Tickets
+                .Where(t => t.MemberShipId == MemberId)
+                .ToListAsync();
+
+            if (existingTickets.Any())
+                throw new InvalidOperationException("Tickets have already been generated for this order");
+            var ticketNumber = GenerateTicketNumber();
+            var memberName = $"{order.User.FullName}";
+            var membershipNumber = GenerateMembershipNumber(order.UserId);
+
+            var qrCode = _qrCodeService.GenerateTicketQRCode(ticketNumber, MemberId, memberName);
+
+            var item = new Ticket
+            {
+                MemberShipId = MemberId,
+                TicketNumber = ticketNumber,
+                MemberName = memberName,
+                MembershipNumber = membershipNumber,
+                PurchaseDate = DateTime.UtcNow,
+                ExpiryDate = DateTime.UtcNow.AddDays(30), // Default 30 days validity
+                QRCode = qrCode,
+                DeliveryMethod = TicketDelivery.Email
+            };
+            await _context.Tickets.AddAsync(item);
+
+            return item;
+
+
+        }
+    }
+}
