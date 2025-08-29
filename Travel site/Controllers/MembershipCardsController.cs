@@ -1,6 +1,8 @@
 using Domain.Entity;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Net;
 using TicketingSystem.Services;
 using Travelsite.DTOs;
 
@@ -31,6 +33,83 @@ namespace TicketingSystem.Controllers
                     IsActive = entity.IsActive,
                     Price = entity.Price,
                 });
+                await _context.SaveChangesAsync();
+
+                return Ok(new ApiResponse(200));
+
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message, ex.InnerException);
+            }
+
+        }
+        [HttpGet("MembershipCard")]
+        public async Task<IActionResult> GetMembershipCard()
+        {
+            try
+            {
+                return Ok(new ApiResponse<IEnumerable<MembershipCard>>(200, await _context.MembershipCards.ToListAsync()));
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message, ex.InnerException);
+            }
+
+        }
+        [HttpPut("UpdateMembershipCard/{id}")]
+        public async Task<IActionResult> UpdateMembershipCard(int id, MembershipCardDto entity)
+        {
+            if (entity == null)
+            {
+                return BadRequest(new ApiResponse((int)HttpStatusCode.BadRequest, "Invalid membership card data"));
+            }
+
+            try
+            {
+                var item = await _context.MembershipCards.FindAsync(id);
+                if (item == null)
+                {
+                    return NotFound(new ApiResponse((int)HttpStatusCode.NotFound, $"Membership card with ID {id} not found"));
+                }
+
+                // Update existing entity instead of creating new
+                item.IsActive = entity.IsActive;
+                item.Price = entity.Price;
+
+                // Optional: Add validation
+                if (entity.Price < 0)
+                {
+                    return BadRequest(new ApiResponse((int)HttpStatusCode.BadRequest, "Price cannot be negative"));
+                }
+
+                _context.MembershipCards.Update(item);
+                await _context.SaveChangesAsync();
+
+                return Ok(new ApiResponse((int)HttpStatusCode.OK, "Membership card updated successfully"));
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return Conflict(new ApiResponse((int)HttpStatusCode.Conflict, "Membership card was modified by another user"));
+            }
+            catch (Exception ex)
+            {
+                // Consider logging the exception here
+                return StatusCode((int)HttpStatusCode.InternalServerError,
+                    new ApiResponse((int)HttpStatusCode.InternalServerError, $"An error occurred: {ex.Message}"));
+            }
+        }
+
+        [HttpDelete("DeleteMembershipCard/{id}")]
+        public async Task<IActionResult> DeleteMembershipCard(int id )
+        {
+            try
+            {
+                var item  = _context.MembershipCards.Find(id);
+                if (item == null)
+                    return BadRequest(new ApiResponse((int)HttpStatusCode.BadRequest,"there's no Membershipcard"));
+
+                _context.MembershipCards.Remove(item);
                 await _context.SaveChangesAsync();
 
                 return Ok(new ApiResponse(200));
@@ -78,11 +157,11 @@ namespace TicketingSystem.Controllers
         /// Get user's membership card
         /// </summary>
         [HttpGet("{userId}")]
-        public async Task<ActionResult> GetMembershipCard(int userId)
+        public async Task<ActionResult> GetMembershipCard(string Email)
         {
             try
             {
-                var membershipCard = await _membershipService.GetMembershipAsync(userId);
+                var membershipCard = await _membershipService.GetMembershipAsync(Email);
                 if (membershipCard == null)
                     return NotFound(new { message = "Membership card not found" });
 
@@ -148,7 +227,7 @@ namespace TicketingSystem.Controllers
         /// Update membership card details (Admin only)
         /// </summary>
         [HttpPut("{userId}")]
-        public async Task<ActionResult> UpdateMembershipCard(int userId, [FromBody] UpdateMembershipDto updateDto)
+        public async Task<ActionResult> UpdateMembershipCard(string Email, [FromBody] UpdateMembershipDto updateDto)
         {
             try
             {
@@ -156,7 +235,7 @@ namespace TicketingSystem.Controllers
                     return BadRequest(ModelState);
 
                 var membershipCard = await _membershipService.UpdateMembershipAsync(
-                    userId, updateDto);
+                    Email, updateDto);
 
                 if (membershipCard == null)
                     return NotFound(new { message = "Membership card not found" });
@@ -174,11 +253,11 @@ namespace TicketingSystem.Controllers
         /// Renew membership card
         /// </summary>
         [HttpPost("{userId}/renew")]
-        public async Task<ActionResult> RenewMembershipCard(int userId, [FromQuery] int months = 12)
+        public async Task<ActionResult> RenewMembershipCard(string Email, [FromQuery] int months = 12)
         {
             try
             {
-                var success = await _membershipService.RenewMembershipAsync(userId, months);
+                var success = await _membershipService.RenewMembershipAsync(Email, months);
                 if (!success)
                     return NotFound(new { message = "Membership card not found" });
 
@@ -229,11 +308,11 @@ namespace TicketingSystem.Controllers
         /// Revoke membership card (Admin only)
         /// </summary>
         [HttpDelete("{userId}")]
-        public async Task<ActionResult> RevokeMembershipCard(int userId)
+        public async Task<ActionResult> RevokeMembershipCard(string Email)
         {
             try
             {
-                var success = await _membershipService.RevokeMembershipAsync(userId);
+                var success = await _membershipService.RevokeMembershipAsync(Email);
                 if (!success)
                     return NotFound(new { message = "Membership card not found" });
 
@@ -288,7 +367,7 @@ namespace TicketingSystem.Controllers
                 UserId = membershipCard.UserId,
                 UserName = membershipCard.User?.FullName ?? string.Empty,
                 UserEmail = membershipCard.User?.Email ?? string.Empty,
-                UserCategory = membershipCard.User?.Category ?? UserCategory.Men,
+                UserCategory = membershipCard.User?.Category ?? UserType.male,
                 BookingDate = membershipCard.BookingDate,
                 Expiry = membershipCard.Expiry,
                 QrCode = membershipCard.QrCode,

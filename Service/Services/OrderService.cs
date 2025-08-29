@@ -18,7 +18,7 @@ namespace TicketingSystem.Services
             return await _context.Orders
                 .Include(o => o.User)
                 .Include(o => o.OrderItems)
-                    .ThenInclude(oi => oi.Product)
+                    //.ThenInclude(oi => oi.Product)
                 .OrderByDescending(o => o.CreatedAt)
                 .ToListAsync();
         }
@@ -28,7 +28,7 @@ namespace TicketingSystem.Services
             return await _context.Orders
                 .Include(o => o.User)
                 .Include(o => o.OrderItems)
-                    .ThenInclude(oi => oi.Product)
+                    //.ThenInclude(oi => oi.Product)
                 .Where(o => o.UserId == userId)
                 .OrderByDescending(o => o.CreatedAt)
                 .ToListAsync();
@@ -39,7 +39,7 @@ namespace TicketingSystem.Services
             return await _context.Orders
                 .Include(o => o.User)
                 .Include(o => o.OrderItems)
-                    .ThenInclude(oi => oi.Product)
+                    //.ThenInclude(oi => oi.Product)
                 .Include(o => o.Transactions)
                 .FirstOrDefaultAsync(o => o.Id == id);
         }
@@ -50,30 +50,13 @@ namespace TicketingSystem.Services
             
             try
             {
-                // Validate that all products exist and get their current prices
-                var productIds = order.OrderItems.Select(oi => oi.ProductId).ToList();
-                var products = await _context.Products
-                    .Where(p => productIds.Contains(p.Id))
-                    .ToListAsync();
-
-                if (products.Count != productIds.Count)
+                order.TotalAmount = 0;
+                foreach(var item in order.OrderItems)
                 {
-                    throw new ArgumentException("One or more products not found");
+                    order.TotalAmount += item.UnitPrice; 
                 }
 
-                // Calculate totals and set current prices
-                decimal totalAmount = 0;
-                foreach (var orderItem in order.OrderItems)
-                {
-                    var product = products.First(p => p.Id == orderItem.ProductId);
-                    orderItem.UnitPrice = product.UnitPrice;
-                    totalAmount += orderItem.UnitPrice * orderItem.PersonNumber;
-                }
 
-                order.TotalAmount = totalAmount;
-                order.FinalAmount = totalAmount; // Will be updated if discount is applied
-                order.CreatedAt = DateTime.UtcNow;
-                order.UpdatedAt = DateTime.UtcNow;
 
                 _context.Orders.Add(order);
                 await _context.SaveChangesAsync();

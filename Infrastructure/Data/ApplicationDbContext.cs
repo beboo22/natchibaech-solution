@@ -10,14 +10,14 @@ namespace Infrastructure.Data
         }
 
         public DbSet<User> Users { get; set; }
-        public DbSet<Product> Products { get; set; }
+        //public DbSet<Product> Products { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
         public DbSet<DiscountCode> DiscountCodes { get; set; }
         public DbSet<Transaction> Transactions { get; set; }
         public DbSet<Ticket> Tickets { get; set; }
         public DbSet<MembershipCard> MembershipCards { get; set; }
-        public DbSet<MemberShip> MemberShip { get; set; }
+        public DbSet<MemberShip> MemberShips { get; set; }
         public DbSet<MembershipReviewRequest> MembershipReviewRequests { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -51,9 +51,9 @@ namespace Infrastructure.Data
                       .WithMany(o => o.OrderItems)
                       .HasForeignKey(oi => oi.OrderId);
                       
-                entity.HasOne(oi => oi.Product)
-                      .WithMany(p => p.OrderItems)
-                      .HasForeignKey(oi => oi.ProductId);
+                //entity.HasOne(oi => oi.Product)
+                //      .WithMany(p => p.OrderItems)
+                //      .HasForeignKey(oi => oi.ProductId);
             });
 
             // DiscountCode configurations
@@ -75,8 +75,8 @@ namespace Infrastructure.Data
                       .WithMany(o => o.Transactions)
                       .HasForeignKey(t => t.OrderId);
                 entity.HasOne(m=>m.MemberShip)
-                .WithOne(m=>m.Transaction)
-                .HasForeignKey<Transaction>(m=>m.MemberShipId);
+                .WithMany(m=>m.Transactions)
+                .HasForeignKey(m=>m.MemberShipId);
             });
 
             // Ticket configurations

@@ -39,7 +39,7 @@ namespace TicketingSystem.Services
                 throw new InvalidOperationException("Ticket has expired");
 
             // Use provided event details or defaults
-            var finalEventName = eventName ?? ticket.OrderItem.Product?.ProductName ?? "Event";
+            var finalEventName = eventName ??  "Event";
             var finalEventLocation = eventLocation ?? "Event Location";
             var finalEventDate = eventDate ?? ticket.PurchaseDate;
 
@@ -82,7 +82,6 @@ namespace TicketingSystem.Services
             var order = await _context.Orders
                 .Include(o => o.User)
                 .Include(o => o.OrderItems)
-                    .ThenInclude(oi => oi.Product)
                 .FirstOrDefaultAsync(o => o.Id == orderId);
 
             if (order == null)
@@ -106,17 +105,17 @@ namespace TicketingSystem.Services
             {
                 
                     var ticketNumber = GenerateTicketNumber();
-                    var memberName = $"{order.BillingFirstName} {order.BillingLastName}";
-                    var membershipNumber = GenerateMembershipNumber(order.UserId);
+                    var UserName = $"{order.BillingFirstName} {order.BillingLastName}";
+                    var UserNumber = GenerateOrderNumber(order.UserId);
 
-                    var qrCode = _qrCodeService.GenerateTicketQRCode(ticketNumber, orderId, memberName);
+                    var qrCode = _qrCodeService.GenerateTicketQRCode(ticketNumber, orderId, UserName);
 
                     var ticket = new Ticket
                     {
                         OrderItemId = orderItem.Id,
                         TicketNumber = ticketNumber,
-                        MemberName = memberName,
-                        MembershipNumber = membershipNumber,
+                        UserName = UserName,
+                        UserNumber = UserNumber,
                         PurchaseDate = DateTime.UtcNow,
                         ExpiryDate = DateTime.UtcNow.AddDays(30), // Default 30 days validity
                         QRCode = qrCode,
@@ -124,7 +123,7 @@ namespace TicketingSystem.Services
                     };
 
                     tickets.Add(ticket);
-                //}
+                
             }
             try
             {
@@ -148,12 +147,12 @@ namespace TicketingSystem.Services
                     .ThenInclude(o => o.User)
                     
                     .Include(t=>t.OrderItem)
-                    .ThenInclude(o=>o.Product)
+                    //.ThenInclude(o=>o.Product)
                     //.ThenInclude(o=>o.p)
                 .FirstOrDefaultAsync(t => t.TicketNumber == ticketNumber);
         }
 
-        public async Task<IEnumerable<Ticket>> GetUserTicketsAsync(int userId)
+        public async Task<IEnumerable<Ticket>> GetUserTicketsAsync(string Email)
         {
              //var item = await _context.Orders
              //   .Include(o=>o.OrderItems)
@@ -195,7 +194,7 @@ namespace TicketingSystem.Services
             //    //.OrderByDescending(t => t.PurchaseDate)
             //    .ToListAsync();
             return await _context.Tickets
-                .Where(t => t.OrderItem.Order.UserId == userId)
+                .Where(t => t.OrderItem.Order.UserEmail == Email)
                 .ToListAsync();
 
         }
@@ -312,7 +311,6 @@ namespace TicketingSystem.Services
                     .ThenInclude(oi => oi.Order)
                         .ThenInclude(o => o.User)
                 .Include(t => t.OrderItem)
-                    .ThenInclude(oi => oi.Product)
                 .Where(t => t.OrderItem.OrderId == orderId)
                 .ToListAsync();
             return item;
@@ -329,10 +327,14 @@ namespace TicketingSystem.Services
         {
             return $"MEM{userId:D6}{DateTime.UtcNow.Year}";
         }
+        private static string GenerateOrderNumber(int userId)
+        {
+            return $"ORD{userId:D6}{DateTime.UtcNow.Year}";
+        }
 
         public async Task<Ticket> GenerateMemberTicketsAsync(int MemberId)
         {
-            var order = await _context.MemberShip
+            var order = await _context.MemberShips
                 .Include(o => o.User)
                 .FirstOrDefaultAsync(o => o.Id == MemberId);
 

@@ -28,7 +28,6 @@ namespace TicketingSystem.Services
             var order = await _context.Orders
                 .Include(o => o.User)
                 .Include(o => o.OrderItems)
-                    .ThenInclude(oi => oi.Product)
                 .FirstOrDefaultAsync(o => o.Id == orderId);
 
             if (order == null)
@@ -82,7 +81,7 @@ namespace TicketingSystem.Services
         {
             
 
-            var order = await _context.MemberShip
+            var order = await _context.MemberShips
                 .Include(m => m.MembershipCard)
                 .Include(o => o.User)
                 .FirstOrDefaultAsync(o => o.Id == MemberShipId);
@@ -97,7 +96,7 @@ namespace TicketingSystem.Services
             // Create transaction record
             var transaction = new Transaction
             {
-                MemberShipId = MemberShipId,
+                MemberShipId = order.Id,
                 Amount = order.MembershipCard.Price,
                 Status = TransactionStatus.Pending,
                 TransactionDate = DateTime.UtcNow,
@@ -119,7 +118,6 @@ namespace TicketingSystem.Services
                 return new TransactionDto
                 {
                     Id = transaction.Id,
-                    MembershipId= transaction.MemberShipId,
                     Amount = transaction.Amount,
                     Status = transaction.Status,
                     TransactionDate = transaction.TransactionDate,

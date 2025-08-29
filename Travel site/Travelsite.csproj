@@ -8,15 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Bdaya.Net.Paymob" Version="1.0.4" />
-    <PackageReference Include="Certes" Version="3.0.4" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.19">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
-    <PackageReference Include="Xdot.Paymob.CashIn" Version="1.0.7" />
-    <PackageReference Include="Xdot.Paymob.CashIn.DependencyInjection" Version="1.0.7" />
   </ItemGroup>
 
   <ItemGroup>

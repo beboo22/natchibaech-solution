@@ -1,10 +1,15 @@
 namespace Domain.Entity
 {
-    public enum UserCategory
+    public enum ServiceCategory
     {
         Ladies,
-        Couples,
-        Men
+        Men,
+        Couples
+    }
+    public enum UserType
+    {
+        male,
+        female
     }
     public enum ReviewStatus
     {
@@ -23,9 +28,9 @@ namespace Domain.Entity
 
     public enum TransactionStatus
     {
+        Pending,
         Success,
         Failed,
-        Pending
     }
 
     public enum PaymentMethod

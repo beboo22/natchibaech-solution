@@ -188,7 +188,7 @@ namespace Travel_site.Controllers
         //    }
         //}
 
-        private static string GenerateMembershipQRData(string membershipNumber, string memberName, UserCategory category, DateTime time)
+        private static string GenerateMembershipQRData(string membershipNumber, string memberName, UserType category, DateTime time)
         {
             return $"MEMBERSHIP:{membershipNumber}|NAME:{memberName}|CATEGORY:{category}|ISSUED:{DateTime.UtcNow:yyyy-MM-dd}|Expiry Data :{time:yyyy-MM-dd}";
         }

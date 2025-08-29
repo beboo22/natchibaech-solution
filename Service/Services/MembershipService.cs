@@ -20,16 +20,16 @@ namespace TicketingSystem.Services
 
         public async Task<MemberShip> IssueMembershipAsync(IssueMembershipCardDto issue)
         {
-            var user = await _context.Users.FindAsync(issue.userId);
+            var user = await _context.Users.Where(u=>u.Email== issue.userEmail).FirstOrDefaultAsync();
 
             if (user == null)
                 throw new ArgumentException("User not found");
-            if (user.Category == UserCategory.Men)
+            if (user.Category == UserType.male)
             {
                 // should admin review this?
                 var reviewRequest = new MembershipReviewRequest
                 {
-                    UserId = issue.userId,
+                    UserId = user.Id,
                     MembershipCardId = issue.MembershipCardId,
                     RequestedAt = DateTime.UtcNow,
                     Status = ReviewStatus.Pending
@@ -49,7 +49,7 @@ namespace TicketingSystem.Services
 
             }
 
-            var membershipNumber = GenerateMembershipNumber(issue.userId);
+            var membershipNumber = GenerateMembershipNumber(user.Id);
             var qrCodeData = GenerateMembershipQRData(membershipNumber, user.FullName, user.Category,DateTime.UtcNow.AddYears(1));
             var qrCode = _qrCodeService.GenerateQRCode(qrCodeData);
 
@@ -57,7 +57,8 @@ namespace TicketingSystem.Services
             var membership = new MemberShip
             {
                 MembershipCardId =issue.MembershipCardId,
-                UserId = issue.userId,
+                UserId = user.Id,
+                UserEmail = issue.userEmail,
                 MembershipNumber = membershipNumber,
                 BookingDate = DateTime.UtcNow,
                 Expiry = DateTime.UtcNow.AddYears(1), // Default 1 year validity
@@ -66,7 +67,7 @@ namespace TicketingSystem.Services
             };
             try
             {
-                _context.MemberShip.Add(membership);
+                _context.MemberShips.Add(membership);
                 await _context.SaveChangesAsync();
                 membership.MembershipCard = existingCard;
                 membership.User = user;
@@ -105,7 +106,7 @@ namespace TicketingSystem.Services
 
             // Generate membership number and QR code
             var membershipNumber = GenerateMembershipNumber(reviewRequest.UserId);
-            var isDuplicate = await _context.MemberShip.AnyAsync(mc => mc.MembershipNumber == membershipNumber);
+            var isDuplicate = await _context.MemberShips.AnyAsync(mc => mc.MembershipNumber == membershipNumber);
             if (isDuplicate)
                 throw new InvalidOperationException("Generated membership number already exists.");
 
@@ -136,7 +137,7 @@ namespace TicketingSystem.Services
             {
                 try
                 {
-                    _context.MemberShip.Add(membershipCard);
+                    _context.MemberShips.Add(membershipCard);
                     await _context.SaveChangesAsync();
 
                     //// Send membership card email
@@ -165,17 +166,17 @@ namespace TicketingSystem.Services
 
 
 
-        public async Task<MemberShip?> GetMembershipAsync(int userId)
+        public async Task<MemberShip?> GetMembershipAsync(string Email)
         {
-            return await _context.MemberShip
+            return await _context.MemberShips
                 .Include(mc => mc.User)
                 .Include(m=>m.MembershipCard)
-                .FirstOrDefaultAsync(mc => mc.UserId == userId);
+                .FirstOrDefaultAsync(mc => mc.User.Email == Email);
         }
 
         public async Task<IEnumerable<MemberShip>> GetAllMembershipAsync()
         {
-            return await _context.MemberShip
+            return await _context.MemberShips
                 .Include(mc => mc.User)
                 .Include(mc => mc.DiscountCodes)
                 .OrderByDescending(mc => mc.BookingDate)
@@ -184,7 +185,7 @@ namespace TicketingSystem.Services
 
         public async Task<IEnumerable<MemberShip>> GetActiveMembershipAsync()
         {
-            return await _context.MemberShip
+            return await _context.MemberShips
                 .Include(mc => mc.User)
                 .Include(mc => mc.DiscountCodes)
                 .Where(mc => mc.Expiry > DateTime.UtcNow)
@@ -196,17 +197,17 @@ namespace TicketingSystem.Services
         {
             var expiryDate = DateTime.UtcNow.AddDays(daysFromNow);
 
-            return await _context.MemberShip
+            return await _context.MemberShips
                 .Include(mc => mc.User)
                 .Where(mc => mc.Expiry <= expiryDate && mc.Expiry > DateTime.UtcNow)
                 .OrderBy(mc => mc.Expiry)
                 .ToListAsync();
         }
 
-        public async Task<MemberShip?> UpdateMembershipStatusAsync(int userId, OrderStatus item)
+        public async Task<MemberShip?> UpdateMembershipStatusAsync(int  membershipId, OrderStatus item)
         {
-            var membershipCard = await _context.MemberShip.Include(u => u.User)
-                .FirstOrDefaultAsync(mc => mc.Id == userId);
+            var membershipCard = await _context.MemberShips.Include(u => u.User)
+                .FirstOrDefaultAsync(mc => mc.Id == membershipId);
 
             if (membershipCard == null)
                 return null;
@@ -217,6 +218,7 @@ namespace TicketingSystem.Services
             var qrCodeData = GenerateMembershipQRData(membershipCard.MembershipNumber, membershipCard.User.FullName, membershipCard.User.Category, membershipCard.Expiry);
             var qrCode = _qrCodeService.GenerateQRCode(qrCodeData);
             membershipCard.QrCode = qrCode;
+            membershipCard.IsActive = true;
             try
             {
                 await _context.SaveChangesAsync();
@@ -229,10 +231,10 @@ namespace TicketingSystem.Services
             return membershipCard;
         }
 
-        public async Task<MemberShip?> UpdateMembershipAsync(int userId, UpdateMembershipDto item)
+        public async Task<MemberShip?> UpdateMembershipAsync(string Email, UpdateMembershipDto item)
         {
-            var membershipCard = await _context.MemberShip.Include(u => u.User)
-                .FirstOrDefaultAsync(mc => mc.UserId == userId);
+            var membershipCard = await _context.MemberShips.Include(u => u.User)
+                .FirstOrDefaultAsync(mc => mc.User.Email == Email);
 
             if (membershipCard == null)
                 return null;
@@ -256,20 +258,20 @@ namespace TicketingSystem.Services
             return membershipCard;
         }
 
-        public async Task<bool> RenewMembershipAsync(int userId, int months = 12)
+        public async Task<bool> RenewMembershipAsync(string Email, int months = 12)
         {
-            var membershipCard = await _context.MemberShip.Include(u => u.User)
-                .FirstOrDefaultAsync(mc => mc.UserId == userId);
+            var membershipCard = await _context.MemberShips.Include(u => u.User)
+                .FirstOrDefaultAsync(mc => mc.User.Email == Email);
 
             if (membershipCard == null)
                 return false;
             //get user
-            if (membershipCard.User.Category == UserCategory.Men)
+            if (membershipCard.User.Category == UserType.male)
             {
                 // should admin review this?
                 var reviewRequest = new MembershipReviewRequest
                 {
-                    UserId = userId,
+                    UserId = membershipCard.User.Id,
                     RequestedAt = DateTime.UtcNow,
                     Status = ReviewStatus.Pending
                 };
@@ -286,7 +288,7 @@ namespace TicketingSystem.Services
             membershipCard.Expiry = newExpiry;
             membershipCard.IsActive = false;
             membershipCard.Status = OrderStatus.Pending;
-            membershipCard.MembershipNumber = GenerateMembershipNumber(userId);
+            membershipCard.MembershipNumber = GenerateMembershipNumber(membershipCard.User.Id);
             var qrCodeData = GenerateMembershipQRData(membershipCard.MembershipNumber, membershipCard.User.FullName, membershipCard.User.Category, membershipCard.Expiry);
             var qrCode = _qrCodeService.GenerateQRCode(qrCodeData);
             membershipCard.QrCode = qrCode;
@@ -301,7 +303,7 @@ namespace TicketingSystem.Services
 
         public async Task<bool> ValidateMembershipAsync(string membershipNumber)
         {
-            var membershipCard = await _context.MemberShip
+            var membershipCard = await _context.MemberShips
                 .FirstOrDefaultAsync(mc => GenerateMembershipNumber(mc.UserId) == membershipNumber);
 
             if (membershipCard == null)
@@ -310,15 +312,15 @@ namespace TicketingSystem.Services
             return membershipCard.Expiry > DateTime.UtcNow;
         }
 
-        public async Task<bool> RevokeMembershipAsync(int userId)
+        public async Task<bool> RevokeMembershipAsync(string Email)
         {
-            var membershipCard = await _context.MemberShip
-                .FirstOrDefaultAsync(mc => mc.UserId == userId);
+            var membershipCard = await _context.MemberShips
+                .FirstOrDefaultAsync(mc => mc.User.Email == Email);
 
             if (membershipCard == null)
                 return false;
 
-            _context.MemberShip.Remove(membershipCard);
+            _context.MemberShips.Remove(membershipCard);
             await _context.SaveChangesAsync();
             return true;
         }
@@ -328,24 +330,24 @@ namespace TicketingSystem.Services
             var nextMonth = now.AddDays(30);
 
             // Query directly from DB (more efficient)
-            var total = await _context.MemberShip.CountAsync();
-            var active = await _context.MemberShip.CountAsync(mc => mc.Expiry > now);
-            var expired = await _context.MemberShip.CountAsync(mc => mc.Expiry <= now);
-            var expiringSoonCount = await _context.MemberShip.CountAsync(mc => mc.Expiry > now && mc.Expiry <= nextMonth);
+            var total = await _context.MemberShips.CountAsync();
+            var active = await _context.MemberShips.CountAsync(mc => mc.Expiry > now);
+            var expired = await _context.MemberShips.CountAsync(mc => mc.Expiry <= now);
+            var expiringSoonCount = await _context.MemberShips.CountAsync(mc => mc.Expiry > now && mc.Expiry <= nextMonth);
 
-            var membersByCategory = await _context.MemberShip
+            var membersByCategory = await _context.MemberShips
                 .Where(mc => mc.Expiry > now)
                 .GroupBy(mc => mc.User.Category)
                 .Select(g => new { g.Key, Count = g.Count() })
                 .ToDictionaryAsync(g => g.Key, g => g.Count);
 
-            var recentlyIssued = await _context.MemberShip
+            var recentlyIssued = await _context.MemberShips
                 .OrderByDescending(mc => mc.BookingDate)
                 .Include(mc => mc.User)
                 .Take(5)
                 .ToListAsync();
 
-            var expiringSoon = await _context.MemberShip
+            var expiringSoon = await _context.MemberShips
                 .Where(mc => mc.Expiry > now && mc.Expiry <= nextMonth)
                 .OrderBy(mc => mc.Expiry)
                 .Include(mc => mc.User)
@@ -393,7 +395,7 @@ namespace TicketingSystem.Services
             return $"MEM{userId:D6}{DateTime.UtcNow.Year}";
         }
 
-        private static string GenerateMembershipQRData(string membershipNumber, string memberName, UserCategory category, DateTime time)
+        private static string GenerateMembershipQRData(string membershipNumber, string memberName, UserType category, DateTime time)
         {
             return $"MEMBERSHIP:{membershipNumber}|NAME:{memberName}|CATEGORY:{category}|ISSUED:{DateTime.UtcNow:yyyy-MM-dd}|Expiry Data :{time:yyyy-MM-dd}";
         }

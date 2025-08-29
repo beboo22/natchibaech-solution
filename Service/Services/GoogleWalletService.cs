@@ -1498,12 +1498,12 @@ namespace TicketingSystem.Services
                 State = "ACTIVE",
                 TicketHolderName = ticket.MemberName,
                 TicketNumber = ticket.TicketNumber,
-                Barcode = new Barcode
-                {
-                    Type = "QR_CODE",
-                    Value = $"https://e9a4cb7ea173.ngrok-free.app/api/Tickets/validate/{ticket.TicketNumber}",//ticket.QRCode, // Use the QRCode from the Ticket
-                    AlternateText = ticket.TicketNumber // Display ticket number as fallback
-                },
+                //Barcode = new Barcode
+                //{
+                //    Type = "QR_CODE",
+                //    Value = $"http://travelsite.runasp.net/api/Tickets/validate/{ticket.TicketNumber}",//ticket.QRCode, // Use the QRCode from the Ticket
+                //    AlternateText = ticket.TicketNumber // Display ticket number as fallback
+                //},
                 TicketType = new LocalizedString
                 {
                     DefaultValue = new TranslatedString

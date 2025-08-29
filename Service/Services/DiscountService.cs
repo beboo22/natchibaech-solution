@@ -41,14 +41,14 @@ namespace TicketingSystem.Services
                 var membershipExists = await _context.Users
                     .AnyAsync(mc => mc.Id == discountCode.UserId.Value);
                 if (!membershipExists)
-                    throw new ArgumentException("User card not found");
+                    throw new ArgumentException("User  not found");
             }
             if (discountCode.MemberShipId.HasValue)
             {
-                var membershipExists = await _context.MemberShip
+                var membershipExists = await _context.MemberShips
                     .AnyAsync(mc => mc.Id == discountCode.MemberShipId.Value);
                 if (!membershipExists)
-                    throw new ArgumentException("User card not found");
+                    throw new ArgumentException("MemberShip  not found");
             }
 
             // Ensure expiry date is in the future
@@ -171,6 +171,10 @@ namespace TicketingSystem.Services
 
             return new DiscountValidationResult(true, "Valid");
         }
+
+
+
+
 
         private class DiscountValidationResult
         {

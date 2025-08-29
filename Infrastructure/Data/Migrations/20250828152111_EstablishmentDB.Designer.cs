@@ -4,16 +4,19 @@ using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace Infrastructure.Migrations
+namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250828152111_EstablishmentDB")]
+    partial class EstablishmentDB
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -52,6 +55,10 @@ namespace Infrastructure.Migrations
 
                     b.Property<int>("Percentage")
                         .HasColumnType("int");
+
+                    b.Property<string>("UserEmail")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("UserId")
                         .HasColumnType("int");
@@ -99,6 +106,10 @@ namespace Infrastructure.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
+                    b.Property<string>("UserEmail")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
@@ -109,7 +120,7 @@ namespace Infrastructure.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("MemberShip");
+                    b.ToTable("MemberShips");
                 });
 
             modelBuilder.Entity("Domain.Entity.MembershipCard", b =>
@@ -147,6 +158,10 @@ namespace Infrastructure.Migrations
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
+
+                    b.Property<string>("UserEmail")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
@@ -209,6 +224,10 @@ namespace Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("UserEmail")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
@@ -227,13 +246,19 @@ namespace Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime>("BookingDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("OrderId")
                         .HasColumnType("int");
 
                     b.Property<int>("PersonNumber")
                         .HasColumnType("int");
 
-                    b.Property<int>("ProductId")
+                    b.Property<int>("ServiceCategory")
                         .HasColumnType("int");
 
                     b.Property<decimal>("UnitPrice")
@@ -243,30 +268,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("OrderId");
 
-                    b.HasIndex("ProductId");
-
                     b.ToTable("OrderItems");
-                });
-
-            modelBuilder.Entity("Domain.Entity.Product", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ProductName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<decimal>("UnitPrice")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Products");
                 });
 
             modelBuilder.Entity("Domain.Entity.Ticket", b =>
@@ -284,7 +286,6 @@ namespace Infrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("MemberName")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
@@ -292,7 +293,6 @@ namespace Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("MembershipNumber")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -304,7 +304,6 @@ namespace Infrastructure.Migrations
 
                     b.Property<string>("QRCode")
                         .IsRequired()
-                        .HasMaxLength(200)
                         .HasColumnType("NVARCHAR(MAX)");
 
                     b.Property<DateTime?>("SentAt")
@@ -312,6 +311,14 @@ namespace Infrastructure.Migrations
 
                     b.Property<string>("TicketNumber")
                         .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("UserName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("UserNumber")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -361,9 +368,7 @@ namespace Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MemberShipId")
-                        .IsUnique()
-                        .HasFilter("[MemberShipId] IS NOT NULL");
+                    b.HasIndex("MemberShipId");
 
                     b.HasIndex("OrderId");
 
@@ -401,6 +406,10 @@ namespace Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Ssn")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -483,15 +492,7 @@ namespace Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Domain.Entity.Product", "Product")
-                        .WithMany("OrderItems")
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Order");
-
-                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("Domain.Entity.Ticket", b =>
@@ -514,8 +515,8 @@ namespace Infrastructure.Migrations
             modelBuilder.Entity("Domain.Entity.Transaction", b =>
                 {
                     b.HasOne("Domain.Entity.MemberShip", "MemberShip")
-                        .WithOne("Transaction")
-                        .HasForeignKey("Domain.Entity.Transaction", "MemberShipId");
+                        .WithMany("Transactions")
+                        .HasForeignKey("MemberShipId");
 
                     b.HasOne("Domain.Entity.Order", "Order")
                         .WithMany("Transactions")
@@ -530,8 +531,7 @@ namespace Infrastructure.Migrations
                 {
                     b.Navigation("DiscountCodes");
 
-                    b.Navigation("Transaction")
-                        .IsRequired();
+                    b.Navigation("Transactions");
                 });
 
             modelBuilder.Entity("Domain.Entity.MembershipCard", b =>
@@ -550,11 +550,6 @@ namespace Infrastructure.Migrations
                 {
                     b.Navigation("Tickets")
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("Domain.Entity.Product", b =>
-                {
-                    b.Navigation("OrderItems");
                 });
 
             modelBuilder.Entity("Domain.Entity.User", b =>

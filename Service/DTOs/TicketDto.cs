@@ -12,6 +12,8 @@ namespace Travelsite.DTOs
         public string TicketNumber { get; set; } = string.Empty;
         public string MemberName { get; set; } = string.Empty;
         public string MembershipNumber { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public string OrderNumber { get; set; } = string.Empty;
         public DateTime PurchaseDate { get; set; }
         public DateTime ExpiryDate { get; set; }
         public string QRCode { get; set; } = string.Empty;

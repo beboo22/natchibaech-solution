@@ -7,6 +7,8 @@ namespace Domain.Entity
         public int Id { get; set; }
         
         public int? UserId { get; set; }
+        [EmailAddress]
+        public string UserEmail { get; set; }
         
         [Required]
         [MaxLength(50)]

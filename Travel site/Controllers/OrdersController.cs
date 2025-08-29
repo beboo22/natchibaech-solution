@@ -1,5 +1,6 @@
 using Domain.Entity;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
 using TicketingSystem.Services;
 using Travelsite.DTOs;
 
@@ -11,14 +12,16 @@ namespace TicketingSystem.Controllers
     {
         private readonly IOrderService _orderService;
         private readonly IDiscountService _discountService;
-        private readonly IProductService _productService;
+        //private readonly IProductService _productService;
+        private IUserService _userService;
 
 
-        public OrdersController(IOrderService orderService, IDiscountService discountService, IProductService productService)
+        public OrdersController(IOrderService orderService, IDiscountService discountService, IUserService userService)
         {
             _orderService = orderService;
             _discountService = discountService;
-            _productService = productService;
+            //_productService = productService;
+            _userService = userService;
         }
 
         /// <summary>
@@ -91,42 +94,52 @@ namespace TicketingSystem.Controllers
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-
+                var user = await _userService.GetUserByEmailAsync(createOrderDto.Email);
+                if (user == null)
+                    return NotFound(new ApiResponse((int)HttpStatusCode.NotFound, "There's no user found"));
 
 
                 var order = new Order
                 {
-                    UserId = createOrderDto.UserId,
+                    UserId = user.Id,
+                    UserEmail = user.Email,
                     BillingFirstName = createOrderDto.BillingFirstName,
                     BillingLastName = createOrderDto.BillingLastName,
                     Country = createOrderDto.Country,
                     IdNumber = createOrderDto.IdNumber,
                     Status = OrderStatus.Pending,
-
                 };
-                var totalprice = 0m;
-                var orderitems = new List<OrderItem>();
+
+                decimal totalPrice = 0m;
+                var orderItems = new List<OrderItem>();
+
                 foreach (var item in createOrderDto.OrderItems)
                 {
-                    var product = await _productService.GetProductByIdAsync(item.ProductId);
-                    if (product != null)
+                    var unitPrice = (int)item.ServiceCategory switch
                     {
-                        totalprice += product.UnitPrice * item.PersonNumber;
-                        orderitems.Add(new OrderItem
-                        {
-                            ProductId = product.Id,
-                            UnitPrice = product.UnitPrice * item.PersonNumber,
-                            PersonNumber = item.PersonNumber,
-                        });
-                    }
+                        1 => 400 * item.PersonNumber,
+                        0 => 200 * item.PersonNumber,
+                        2 => 450 * item.PersonNumber,
+                        _ => 0
+                    };
+
+                    totalPrice += unitPrice;
+
+                    orderItems.Add(new OrderItem
+                    {
+                        BookingDate = item.BookingDate,
+                        CreatedAt = DateTime.UtcNow,
+                        PersonNumber = item.PersonNumber,
+                        UnitPrice = unitPrice
+                    });
                 }
-                order.OrderItems = orderitems;
-                order.TotalAmount = totalprice;
+
+                order.OrderItems = orderItems;
+                order.TotalAmount = totalPrice;
 
                 var createdOrder = await _orderService.CreateOrderAsync(order);
-
                 var orderDto = MapToOrderDto(createdOrder!);
-                // use apiresponse to return the created order
+
                 return Ok(new ApiResponse<OrderDto>(201, orderDto, "Order created successfully"));
             }
             catch (ArgumentException ex)
@@ -138,6 +151,7 @@ namespace TicketingSystem.Controllers
                 return StatusCode(500, new { message = "An error occurred while creating the order", error = ex.Message });
             }
         }
+
 
         /// <summary>
         /// Update order status (Admin only) - Pending → Approved → Paid
@@ -184,8 +198,6 @@ namespace TicketingSystem.Controllers
                 OrderItems = order.OrderItems?.Select(oi => new OrderItemDto
                 {
                     Id = oi.Id,
-                    ProductId = oi.ProductId,
-                    ProductName = oi.Product?.ProductName ?? string.Empty,
                     PersonNumber = oi.PersonNumber,
                     UnitPrice = oi.UnitPrice,
                     TotalPrice = oi.UnitPrice * oi.PersonNumber

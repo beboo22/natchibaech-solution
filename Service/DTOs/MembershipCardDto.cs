@@ -10,6 +10,7 @@ namespace Travelsite.DTOs
     }
     public class MembershipDto
     {
+        //public int Id { get; set; }
         public decimal Price { get; set; }
         public bool IsActive { get; set; } = true;
         public int Id { get; set; }
@@ -17,7 +18,7 @@ namespace Travelsite.DTOs
         public string UserName { get; set; }
         public string UserEmail { get; set; }
         public OrderStatus status { get; set; }
-        public UserCategory UserCategory { get; set; }
+        public UserType UserCategory { get; set; }
         public DateTime BookingDate { get; set; }
         public DateTime Expiry { get; set; }
         public string QrCode { get; set; }
@@ -29,7 +30,8 @@ namespace Travelsite.DTOs
     public class IssueMembershipCardDto
     {
         [Required]
-        public int userId { get; set; }
+        [EmailAddress]
+        public string userEmail { get; set; }
         [Required]
         public int MembershipCardId { get; set; }
         
@@ -65,7 +67,7 @@ namespace Travelsite.DTOs
         public int ActiveMembers { get; set; }
         public int ExpiredMembers { get; set; }
         public int ExpiringThisMonth { get; set; }
-        public Dictionary<UserCategory, int> MembersByCategory { get; set; } = new();
+        public Dictionary<UserType, int> MembersByCategory { get; set; } = new();
         public List<MemberShip> RecentlyIssued { get; set; } = new();
         public List<MemberShip> ExpiringSoon { get; set; } = new();
         public double ActivePercentage { get; set; }

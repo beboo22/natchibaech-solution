@@ -93,7 +93,7 @@ namespace TicketingSystem.Controllers
         /// Get ticket details by ticket number
         /// </summary>
         [HttpGet("{ticketNumber}")]
-        public async Task<ActionResult<TicketDto>> GetTicket(string ticketNumber)
+        public async Task<ActionResult> GetTicket(string ticketNumber)
         {
             try
             {
@@ -116,12 +116,12 @@ namespace TicketingSystem.Controllers
         /// <summary>
         /// Get all tickets for a specific user
         /// </summary>
-        [HttpGet("user/{userId}")]
-        public async Task<ActionResult<IEnumerable<TicketDto>>> GetUserTickets(int userId)
+        [HttpGet("user/{Email}")]
+        public async Task<ActionResult<IEnumerable<TicketDto>>> GetUserTickets(string Email)
         {
             try
             {
-                var tickets = await _ticketService.GetUserTicketsAsync(userId);
+                var tickets = await _ticketService.GetUserTicketsAsync(Email);
                 var ticketDtos = tickets.Select(MapToTicketDto);
                 if (!ticketDtos.Any())
                     return NotFound(new { message = "No tickets found for this user" });
@@ -387,19 +387,27 @@ namespace TicketingSystem.Controllers
         {
             return new TicketDto
             {
-                Id = ticket.Id,
+
                 OrderId = ticket.OrderItemId??0,
+                UserName = ticket.UserName ??"",
+                OrderNumber = ticket.UserNumber??"",
+
+                
                 MemberShipId = ticket.MemberShipId??0,
-                TicketNumber = ticket.TicketNumber,
-                MemberName = ticket.MemberName,
-                MembershipNumber = ticket.MembershipNumber,
-                PurchaseDate = ticket.PurchaseDate,
+                MemberName = ticket.MemberName??"",
+                MembershipNumber = ticket.MembershipNumber ?? "",
                 ExpiryDate = ticket.ExpiryDate,
+                PurchaseDate = ticket.PurchaseDate,
+
+
+
+                Id = ticket.Id,
+                TicketNumber = ticket.TicketNumber,
                 QRCode = ticket.QRCode,
                 DeliveryMethod = ticket.DeliveryMethod,
                 SentAt = ticket.SentAt,
                 IsValid = ticket.ExpiryDate > DateTime.UtcNow && ticket.OrderItem?.Order.Status == OrderStatus.Paid,
-                ProductName = ticket.OrderItem?.Product.ProductName ?? "Event Ticket",
+               
                 UserEmail = ticket.OrderItem?.Order.User?.Email ?? string.Empty,
                 UserPhone = ticket.OrderItem?.Order.User?.Phone ?? string.Empty
             };

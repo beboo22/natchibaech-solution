@@ -75,7 +75,7 @@ namespace Travel_site.Controllers
                         QrCode = qrCode,
                         Status = OrderStatus.Pending,
                     };
-                    await _context.MemberShip.AddAsync(membership);
+                    await _context.MemberShips.AddAsync(membership);
                 }
                 item.Status = status;
                 _context.MembershipReviewRequests.Update(item);
@@ -97,7 +97,7 @@ namespace Travel_site.Controllers
             return $"MEM{userId:D6}{DateTime.UtcNow.Year}";
         }
 
-        private static string GenerateMembershipQRData(string membershipNumber, string memberName, UserCategory category, DateTime time)
+        private static string GenerateMembershipQRData(string membershipNumber, string memberName, UserType category, DateTime time)
         {
             return $"MEMBERSHIP:{membershipNumber}|NAME:{memberName}|CATEGORY:{category}|ISSUED:{DateTime.UtcNow:yyyy-MM-dd}|Expiry Data :{time:yyyy-MM-dd}";
         }

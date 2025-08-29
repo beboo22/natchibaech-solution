@@ -7,7 +7,7 @@ namespace TicketingSystem.Services
         Task<IEnumerable<Ticket>> GenerateTicketsAsync(int orderId);
         Task<Ticket> GenerateMemberTicketsAsync(int MemberId);
         Task<Ticket?> GetTicketByNumberAsync(string ticketNumber);
-        Task<IEnumerable<Ticket>> GetUserTicketsAsync(int userId);
+        Task<IEnumerable<Ticket>> GetUserTicketsAsync(string Email);
         Task<bool> SendTicketAsync(int ticketId, TicketDelivery deliveryMethod,string? Email = null);
         Task<bool> ValidateTicketAsync(string ticketNumber);
         Task<IEnumerable<Ticket>> GetTicketsByOrderAsync(int orderId);

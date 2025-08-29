@@ -1,5 +1,6 @@
 using Domain.Entity;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Travelsite.DTOs
 {
@@ -24,7 +25,8 @@ namespace Travelsite.DTOs
     public class CreateOrderDto
     {
         [Required]
-        public int UserId { get; set; }
+        [EmailAddress]
+        public string Email { get; set; }
         
         [Required]
         [MaxLength(50)]
@@ -57,8 +59,6 @@ namespace Travelsite.DTOs
     public class OrderItemDto
     {
         public int Id { get; set; }
-        public int ProductId { get; set; }
-        public string ProductName { get; set; } = string.Empty;
         public int PersonNumber { get; set; }
         public decimal UnitPrice { get; set; }
         public decimal TotalPrice { get; set; }
@@ -66,9 +66,16 @@ namespace Travelsite.DTOs
 
     public class CreateOrderItemDto
     {
-        [Required]
-        public int ProductId { get; set; }
-        
+        public ServiceCategory ServiceCategory { get; set; }
+
+        public DateTime BookingDate { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal UnitPrice { get; set; }
+
+
+
+
         [Required]
         [Range(1, int.MaxValue, ErrorMessage = "Person number must be at least 1")]
         public int PersonNumber { get; set; }

@@ -74,7 +74,7 @@ namespace TicketingSystem.Controllers
                     FullName = createUserDto.FullName,
                     Email = createUserDto.Email,
                     Phone = createUserDto.Phone,
-                    Category = createUserDto.Category
+                    Category = createUserDto.Type
                 };
 
                 var createdUser = await _userService.CreateUserAsync(user);
@@ -93,6 +93,9 @@ namespace TicketingSystem.Controllers
                 return StatusCode(500, new { message = "An error occurred while creating the user", error = ex.Message });
             }
         }
+
+
+
 
         private static UserDto MapToUserDto(User user)
         {

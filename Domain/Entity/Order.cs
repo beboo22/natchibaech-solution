@@ -41,5 +41,7 @@ namespace Domain.Entity
         public virtual User User { get; set; } = null!;
         public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
         public virtual ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
+        [EmailAddress]
+        public string UserEmail { get; set; }
     }
 }

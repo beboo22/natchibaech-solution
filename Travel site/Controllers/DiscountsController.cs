@@ -124,8 +124,8 @@ namespace TicketingSystem.Controllers
 
                 var discountCode = new DiscountCode
                 {
-                    MemberShipId = createDiscountDto.MemberId,
-                    UserId = createDiscountDto.UserId,
+                    MemberShipId = createDiscountDto.MemberId??null,
+                    UserId = createDiscountDto.UserId??null,
                     Code = createDiscountDto.Code.ToUpper(),
                     Percentage = createDiscountDto.Percentage,
                     MaxUsage = createDiscountDto.MaxUsage,

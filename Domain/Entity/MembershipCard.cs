@@ -15,6 +15,8 @@ namespace Domain.Entity
     {
         public int Id { get; set; }
         public int UserId { get; set; }
+        [EmailAddress]
+        public string UserEmail { get; set; }
         public int MembershipCardId { get; set; }
         public OrderStatus Status { get; set; } = OrderStatus.Pending;
         public bool IsActive { get; set; } = true;
@@ -27,7 +29,7 @@ namespace Domain.Entity
         // Navigation properties
         public virtual User User { get; set; } = null!;
         public virtual MembershipCard MembershipCard { get; set; } = null!;
-        public virtual Transaction Transaction { get; set; } = null!;
+        public virtual ICollection<Transaction> Transactions { get; set; } = null!;
         public virtual ICollection<DiscountCode> DiscountCodes { get; set; } = new List<DiscountCode>();
         //public virtual ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
 
