@@ -1539,7 +1539,7 @@ namespace TicketingSystem.Services
                         }
                     },
                     IssuerName = "Travel Site",
-                    ReviewStatus = "UNDER_REVIEW", // or "SUBMIT"
+                    ReviewStatus = "SUBMIT", // or "SUBMIT"
                     Venue = new EventVenue
                     {
                         Name = new LocalizedString

@@ -32,6 +32,15 @@ namespace Travelsite.DTOs
         [Required]
         [EmailAddress]
         public string userEmail { get; set; }
+        public string phone { get; set; }
+        public UserType type { get; set; }
+        public string Fullname { get; set; }
+
+        
+
+
+
+
         [Required]
         public int MembershipCardId { get; set; }
         

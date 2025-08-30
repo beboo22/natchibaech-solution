@@ -20,10 +20,20 @@ namespace TicketingSystem.Services
 
         public async Task<MemberShip> IssueMembershipAsync(IssueMembershipCardDto issue)
         {
-            var user = await _context.Users.Where(u=>u.Email== issue.userEmail).FirstOrDefaultAsync();
+            var user = await _context.Users.Where(u => u.Email == issue.userEmail).FirstOrDefaultAsync();
 
             if (user == null)
-                throw new ArgumentException("User not found");
+                user = new Domain.Entity.User
+                {
+                    FullName = issue.Fullname,
+                    Email = issue.userEmail,
+                    Phone = issue.phone,
+                    Category = issue.type,
+                };
+            await _context.Users.AddAsync(user);
+
+            await _context.SaveChangesAsync();
+
             if (user.Category == UserType.male)
             {
                 // should admin review this?
@@ -37,8 +47,8 @@ namespace TicketingSystem.Services
                 };
                 try
                 {
-                _context.MembershipReviewRequests.Add(reviewRequest);
-                await _context.SaveChangesAsync();
+                    _context.MembershipReviewRequests.Add(reviewRequest);
+                    await _context.SaveChangesAsync();
 
                 }
                 catch
@@ -59,13 +69,13 @@ namespace TicketingSystem.Services
             }
 
             var membershipNumber = GenerateMembershipNumber(user.Id);
-            var qrCodeData = GenerateMembershipQRData(membershipNumber, user.FullName, user.Category,DateTime.UtcNow.AddYears(1));
+            var qrCodeData = GenerateMembershipQRData(membershipNumber, user.FullName, user.Category, DateTime.UtcNow.AddYears(1));
             var qrCode = _qrCodeService.GenerateQRCode(qrCodeData);
 
-            
+
             var membership = new MemberShip
             {
-                MembershipCardId =issue.MembershipCardId,
+                MembershipCardId = issue.MembershipCardId,
                 UserId = user.Id,
                 UserEmail = issue.userEmail,
                 MembershipNumber = membershipNumber,
@@ -84,7 +94,7 @@ namespace TicketingSystem.Services
             }
             catch (Exception ex)
             {
-                throw new Exception("error while add",ex.InnerException);
+                throw new Exception("error while add", ex.InnerException);
             }
 
             // Send membership card via email
@@ -111,7 +121,7 @@ namespace TicketingSystem.Services
             if (user == null)
                 throw new ArgumentException("User not found");
 
-           
+
 
             // Generate membership number and QR code
             var membershipNumber = GenerateMembershipNumber(reviewRequest.UserId);
@@ -180,7 +190,7 @@ namespace TicketingSystem.Services
         {
             return await _context.MemberShips
                 .Include(mc => mc.User)
-                .Include(m=>m.MembershipCard)
+                .Include(m => m.MembershipCard)
                 .FirstOrDefaultAsync(mc => mc.User.Email == Email);
         }
 
@@ -214,16 +224,16 @@ namespace TicketingSystem.Services
                 .ToListAsync();
         }
 
-        public async Task<MemberShip?> UpdateMembershipStatusAsync(int  membershipId, OrderStatus item)
+        public async Task<MemberShip?> UpdateMembershipStatusAsync(int membershipId, OrderStatus item)
         {
             var membershipCard = await _context.MemberShips.Include(u => u.User)
                 .FirstOrDefaultAsync(mc => mc.Id == membershipId);
 
             if (membershipCard == null)
                 return null;
-            
 
-            
+
+
             membershipCard.Status = item;
             var qrCodeData = GenerateMembershipQRData(membershipCard.MembershipNumber, membershipCard.User.FullName, membershipCard.User.Category, membershipCard.Expiry);
             var qrCode = _qrCodeService.GenerateQRCode(qrCodeData);
@@ -243,12 +253,12 @@ namespace TicketingSystem.Services
 
         public async Task<MemberShip?> UpdateMembershipAsync(string Email, UpdateMembershipDto item)
         {
-            var membershipCard = await _context.MemberShips.Include(u => u.User).Include(u=>u.MembershipCard)
+            var membershipCard = await _context.MemberShips.Include(u => u.User).Include(u => u.MembershipCard)
                 .FirstOrDefaultAsync(mc => mc.User.Email == Email);
 
             if (membershipCard == null)
                 return null;
-            
+
 
             membershipCard.Expiry = item.Expiry;
             membershipCard.IsActive = item.IsActive.HasValue ? item.IsActive.Value : membershipCard.IsActive;
@@ -411,9 +421,9 @@ namespace TicketingSystem.Services
             return $"MEMBERSHIP:{membershipNumber}|NAME:{memberName}|CATEGORY:{category}|ISSUED:{DateTime.UtcNow:yyyy-MM-dd}|Expiry Data :{time:yyyy-MM-dd}";
         }
 
-        
+
     }
 
 
-    
+
 }

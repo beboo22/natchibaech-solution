@@ -75,7 +75,7 @@ namespace Travel_site.Controllers
         {
             var qrCodeData = GenerateMembershipQRData("123", "beboo", UserType.male, DateTime.UtcNow.AddYears(1));
             var qrCode = _qrCodeService.GenerateQRCode(qrCodeData);
-            await _notificationService.SendTicketByEmailAsync("moammedtareq8@gmail.com", "1333", qrCode, "beboo", DateTime.UtcNow.AddMonths(1));
+            await _notificationService.SendTicketByEmailAsync("dodotarek506@gmail.com", "1333", qrCode, "beboo", DateTime.UtcNow.AddMonths(1));
         }
         //[HttpGet("/wh")]
         //public async Task TestWhats()

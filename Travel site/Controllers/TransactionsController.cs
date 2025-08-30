@@ -67,7 +67,7 @@ namespace TicketingSystem.Controllers
             }
         }
         [HttpPost("MemberShipinitiate")]
-        public async Task<ActionResult> InitiateTransaction([FromBody] MemberShipInitiateTransactionDto initiateDto)
+        public async Task<ActionResult<ApiResponse<TransactionDto>>> InitiateTransaction([FromBody] MemberShipInitiateTransactionDto initiateDto)
         {
             try
             {

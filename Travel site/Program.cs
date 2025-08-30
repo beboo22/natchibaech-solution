@@ -52,6 +52,7 @@ namespace Travelsite
                 });
             });
             var app = builder.Build();
+
             // add exception handling middleware
             app.UseMiddleware<ExceptionMiddleware>();
             // Configure the HTTP request pipeline.
@@ -75,6 +76,8 @@ namespace Travelsite
             //{
             //    Console.WriteLine(ex.ToString());
             //}
+            app.UseStaticFiles();
+
             app.UseCors("AllowAll");
             app.UseHttpsRedirection();
             app.UseAuthorization();

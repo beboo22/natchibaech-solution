@@ -27,7 +27,10 @@ namespace Travelsite.DTOs
         [Required]
         [EmailAddress]
         public string Email { get; set; }
-        
+        public string phone { get; set; }
+        public UserType Type { get; set; }
+
+
         [Required]
         [MaxLength(150)]
         public string BillingFUllName { get; set; } = string.Empty;

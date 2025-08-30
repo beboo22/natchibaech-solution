@@ -128,7 +128,7 @@ namespace TicketingSystem.Controllers
         /// Issue membership card to user
         /// </summary>
         [HttpPost("issue/")]
-        public async Task<ActionResult> IssueMembershipCard([FromBody] IssueMembershipCardDto issueDto)
+        public async Task<ActionResult<ApiResponse<MembershipDto>>> IssueMembershipCard([FromBody] IssueMembershipCardDto issueDto)
         {
             try
             {

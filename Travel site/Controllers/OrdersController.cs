@@ -1,6 +1,7 @@
 using Domain.Entity;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
+using System.Numerics;
 using TicketingSystem.Services;
 using Travelsite.DTOs;
 
@@ -12,7 +13,6 @@ namespace TicketingSystem.Controllers
     {
         private readonly IOrderService _orderService;
         private readonly IDiscountService _discountService;
-        //private readonly IProductService _productService;
         private IUserService _userService;
 
 
@@ -96,15 +96,25 @@ namespace TicketingSystem.Controllers
 
                 var user = await _userService.GetUserByEmailAsync(createOrderDto.Email);
                 if (user == null)
-                    return NotFound(new ApiResponse((int)HttpStatusCode.NotFound, "There's no user found"));
+                    user = await _userService.CreateUserAsync(new Domain.Entity.User
+                    {
+                        FullName = createOrderDto.BillingFUllName,
+                        Email = createOrderDto.Email,
+                        Phone = createOrderDto.phone,
+                        Category = createOrderDto.Type,
+                    });
+                    
 
+                var nameParts = createOrderDto.BillingFUllName.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
 
                 var order = new Order
                 {
                     UserId = user.Id,
                     UserEmail = user.Email,
-                    BillingFirstName = createOrderDto.BillingFUllName.Split("")[0],
-                    BillingLastName = createOrderDto.BillingFUllName.Split("")[1],
+
+                    BillingFirstName = nameParts.Length > 0 ? nameParts[0] : string.Empty,
+                    BillingLastName = nameParts.Length > 1 ? nameParts[1] : string.Empty,
+
                     Country = createOrderDto.Country,
                     IdNumber = createOrderDto.IdNumber,
                     Status = OrderStatus.Pending,
