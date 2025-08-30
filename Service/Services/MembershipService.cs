@@ -30,12 +30,21 @@ namespace TicketingSystem.Services
                 var reviewRequest = new MembershipReviewRequest
                 {
                     UserId = user.Id,
+                    UserEmail = user.Email,
                     MembershipCardId = issue.MembershipCardId,
                     RequestedAt = DateTime.UtcNow,
                     Status = ReviewStatus.Pending
                 };
+                try
+                {
                 _context.MembershipReviewRequests.Add(reviewRequest);
                 await _context.SaveChangesAsync();
+
+                }
+                catch
+                {
+                    Console.WriteLine();
+                }
                 throw new InvalidOperationException("Membership issuance for this category requires admin review.");
             }
 
@@ -94,7 +103,7 @@ namespace TicketingSystem.Services
             if (reviewRequest == null)
                 throw new ArgumentException("Review request not found");
 
-            if (reviewRequest.Status != ReviewStatus.Rejected)
+            if (reviewRequest.Status == ReviewStatus.Rejected)
                 throw new InvalidOperationException("Membership card issuance cannot proceed because the review is not approved");
 
             // Retrieve user
@@ -126,6 +135,7 @@ namespace TicketingSystem.Services
             {
                 MembershipCardId = reviewRequest.MembershipCardId,
                 UserId = reviewRequest.UserId,
+                UserEmail = reviewRequest.UserEmail,
                 MembershipNumber = membershipNumber,
                 BookingDate = DateTime.UtcNow,
                 Expiry = DateTime.UtcNow.AddYears(1),
@@ -233,7 +243,7 @@ namespace TicketingSystem.Services
 
         public async Task<MemberShip?> UpdateMembershipAsync(string Email, UpdateMembershipDto item)
         {
-            var membershipCard = await _context.MemberShips.Include(u => u.User)
+            var membershipCard = await _context.MemberShips.Include(u => u.User).Include(u=>u.MembershipCard)
                 .FirstOrDefaultAsync(mc => mc.User.Email == Email);
 
             if (membershipCard == null)

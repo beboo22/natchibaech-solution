@@ -32,8 +32,15 @@ namespace TicketingSystem.Services
             if (ticket == null)
                 throw new ArgumentException("Ticket not found");
 
-            if ((ticket.OrderItem != null ? ticket.OrderItem.Order.Status : ticket.MemberShip.Status) != OrderStatus.Paid)
-                throw new InvalidOperationException("Ticket must be from a paid order");
+            //if ((ticket.OrderItem != null ? ticket.OrderItem.Order.Status : ticket.MemberShip.Status) != OrderStatus.Paid)
+            //    throw new InvalidOperationException("Ticket must be from a paid order");
+
+            if(ticket.OrderItem != null)
+                if(ticket.OrderItem.Order.Status != OrderStatus.Paid)
+                    throw new ArgumentException("Ticket must be from a paid order");
+            if(ticket.MemberShip is not null)
+                    if (ticket.MemberShip.Status != OrderStatus.Paid)
+                        throw new ArgumentException("Ticket must be from a paid Memper");
 
             if (ticket.ExpiryDate <= DateTime.UtcNow)
                 throw new InvalidOperationException("Ticket has expired");

@@ -85,22 +85,22 @@ namespace Travel_site.Controllers
         //    await _notificationService.SendTicketByWhatsAppAsync("01115472381", "1333", qrCode, "beboo", DateTime.UtcNow.AddMonths(1));
         //}
 
-        //[HttpGet("create-pass")]
-        //public async Task<IActionResult> CreatePass()
-        //{
-        //    var testTicket = new Ticket
-        //    {
-        //        TicketNumber = "T12345",
-        //        MemberName = "John Doe",
-        //        QRCode = "QRCODE12345",
-        //        MembershipNumber = "Seat-10",
-        //        PurchaseDate = DateTime.UtcNow,
-        //        ExpiryDate = DateTime.UtcNow.AddDays(7)
-        //    };
+        [HttpGet("create-pass")]
+        public async Task<IActionResult> CreatePass()
+        {
+            var testTicket = new Ticket
+            {
+                TicketNumber = "T12345",
+                MemberName = "John Doe",
+                QRCode = "QRCODE12345",
+                MembershipNumber = "Seat-10",
+                PurchaseDate = DateTime.UtcNow,
+                ExpiryDate = DateTime.UtcNow.AddDays(7)
+            };
 
-        //    var saveUrl =   _walletService.CreateEventTicketPassAsync(testTicket);
-        //    return Ok(new { SaveUrl = saveUrl });
-        //}
+            var saveUrl = _walletService.CreateTicketWalletLink(testTicket);
+            return Ok(new { SaveUrl = saveUrl });
+        }
 
         //[HttpPost("create-ticket-pass")]
         //public IActionResult CreateTicketPass([FromBody] Ticket ticket)

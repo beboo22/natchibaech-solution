@@ -11,7 +11,7 @@ namespace TicketingSystem.Controllers
     {
         private readonly IUserService _userService;
         private readonly IOrderService _orderService;
-        private readonly IProductService _productService;
+        //private readonly IProductService _productService;
         private readonly IMembershipService _membershipService;
         private readonly ITicketService _ticketService;
         private readonly IDiscountService _discountService;
@@ -19,14 +19,14 @@ namespace TicketingSystem.Controllers
         public AdminController(
             IUserService userService,
             IOrderService orderService,
-            IProductService productService,
+            //IProductService productService,
             IMembershipService membershipService,
             ITicketService ticketService,
             IDiscountService discountService)
         {
             _userService = userService;
             _orderService = orderService;
-            _productService = productService;
+            //_productService = productService;
             _membershipService = membershipService;
             _ticketService = ticketService;
             _discountService = discountService;
@@ -42,7 +42,7 @@ namespace TicketingSystem.Controllers
             {
                 var users = await _userService.GetAllUsersAsync();
                 var orders = await _orderService.GetAllOrdersAsync();
-                var products = await _productService.GetAllProductsAsync();
+                //var products = await _productService.GetAllProductsAsync();
                 var membershipStats = await _membershipService.GetMembershipStatsAsync();
                 var discountCodes = await _discountService.GetAllDiscountCodesAsync();
 
@@ -65,7 +65,7 @@ namespace TicketingSystem.Controllers
                     {
                         TotalUsers = users.Count(),
                         TotalOrders = orders.Count(),
-                        TotalProducts = products.Count(),
+                        //TotalProducts = products.Count(),
                         TotalRevenue = totalRevenue,
                         PaidOrders = orders.Count(o => o.Status == OrderStatus.Paid),
                         PendingOrders = orders.Count(o => o.Status == OrderStatus.Pending)
@@ -129,4 +129,48 @@ namespace TicketingSystem.Controllers
             }
         }
     }
+
+
+    public class DashboardResponseDto
+    {
+        public OverviewDto Overview { get; set; }
+        public OrderStatsDto OrderStats { get; set; }
+        public object MembershipStats { get; set; } // replace with actual type
+        public DiscountStatsDto DiscountStats { get; set; }
+    }
+
+    public class OverviewDto
+    {
+        public int TotalUsers { get; set; }
+        public int TotalOrders { get; set; }
+        public decimal TotalRevenue { get; set; }
+        public int PaidOrders { get; set; }
+        public int PendingOrders { get; set; }
+    }
+
+    public class OrderStatsDto
+    {
+        public Dictionary<string, int> OrdersByStatus { get; set; }
+        public List<RecentOrderDto> RecentOrders { get; set; }
+    }
+
+    public class RecentOrderDto
+    {
+        public int Id { get; set; }
+        public int UserId { get; set; }
+        public string UserName { get; set; }
+        public string Status { get; set; }
+        public decimal TotalAmount { get; set; }
+        public decimal FinalAmount { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public class DiscountStatsDto
+    {
+        public int TotalDiscountCodes { get; set; }
+        public int ActiveDiscountCodes { get; set; }
+        public int ExpiredDiscountCodes { get; set; }
+        public int FullyUsedDiscountCodes { get; set; }
+    }
+
 }

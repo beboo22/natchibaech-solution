@@ -1385,11 +1385,13 @@ namespace TicketingSystem.Services
             _env = env;
             var walletSettings = configuration.GetSection("GoogleWalletSettings");
 
-            keyFilePath = Path.Combine(_env.WebRootPath, "GoogleKeys", "natchibaech-9e515a4f00be.json");// walletSettings["ServiceAccountKeyPath"] ;
+            string keyPath = Path.Combine(Directory.GetCurrentDirectory(), "GoogleKeys", "natchibaech-793937ea412e.json");
+            //keyFilePath = Path.Combine(_env.WebRootPath, "GoogleKeys", "natchibaech-9e515a4f00be.json");// walletSettings["ServiceAccountKeyPath"] ;
+            keyFilePath = Path.Combine(Directory.GetCurrentDirectory(), "GoogleKeys", "natchibaech-793937ea412e.json"); ;// walletSettings["ServiceAccountKeyPath"] ;
             issuerId = walletSettings["IssuerId"];
             classSuffix = walletSettings["ClassId"];
             Auth();
-            _env = env;
+            //_env = env;
         }
 
         // Existing Auth method
@@ -1397,10 +1399,16 @@ namespace TicketingSystem.Services
         {
             credentials = (ServiceAccountCredential)GoogleCredential
                 .FromFile(keyFilePath)
-                .CreateScoped(new List<string>
-                {
+                .CreateScoped(
+                new[] {
                 WalletobjectsService.ScopeConstants.WalletObjectIssuer
-                })
+                    //WalletobjectsService.ScopeConstants.WalletObjects
+}
+                //new List<string>
+                //{
+                //WalletobjectsService.ScopeConstants.WalletObjectIssuer
+                //}
+                )
                 .UnderlyingCredential;
 
             service = new WalletobjectsService(
@@ -1410,74 +1418,167 @@ namespace TicketingSystem.Services
                 });
         }
 
-        // Existing CreateClass method
+        //// Existing CreateClass method
+        //private string CreateClass()
+        //{
+        //    Stream responseStream = service.Eventticketclass
+        //        .Get($"{issuerId}.{classSuffix}")
+        //        .ExecuteAsStream();
+
+        //    StreamReader responseReader = new StreamReader(responseStream);
+        //    JObject jsonResponse = JObject.Parse(responseReader.ReadToEnd());
+
+        //    if (!jsonResponse.ContainsKey("error"))
+        //    {
+        //        Console.WriteLine($"Class {issuerId}.{classSuffix} already exists!");
+        //        return $"{issuerId}.{classSuffix}";
+        //    }
+        //    else if (jsonResponse["error"].Value<int>("code") != 404)
+        //    {
+        //        Console.WriteLine(jsonResponse.ToString());
+        //        return $"{issuerId}.{classSuffix}";
+        //    }
+
+        //    EventTicketClass newClass = new EventTicketClass
+        //    {
+        //        EventId = $"{issuerId}.{classSuffix}",
+        //        EventName = new LocalizedString
+        //        {
+        //            DefaultValue = new TranslatedString
+        //            {
+        //                Language = "en-US",
+        //                Value = "Event Ticket"
+        //            }
+        //        },
+        //        Id = $"{issuerId}.{classSuffix}",
+        //        IssuerName = "Travel Site",
+        //        ReviewStatus = "UNDER_REVIEW",//SUBMIT -- UNDER_REVIEW
+        //        // Optional: Add more class properties like logo, venue, etc.
+        //        Venue = new EventVenue
+        //        {
+        //            Name = new LocalizedString
+        //            {
+        //                DefaultValue = new TranslatedString
+        //                {
+        //                    Language = "en-US",
+        //                    Value = "Event Venue"
+        //                }
+        //            },
+        //            Address = new LocalizedString
+        //            {
+        //                DefaultValue = new TranslatedString
+        //                {
+        //                    Language = "en-US",
+        //                    Value = "123 Event St, City, Country"
+        //                }
+        //            }
+        //        }
+        //    };
+
+        //    responseStream = service.Eventticketclass
+        //        .Insert(newClass)
+        //        .ExecuteAsStream();
+
+        //    responseReader = new StreamReader(responseStream);
+        //    jsonResponse = JObject.Parse(responseReader.ReadToEnd());
+
+        //    Console.WriteLine("Class insert response");
+        //    Console.WriteLine(jsonResponse.ToString());
+
+        //    return $"{issuerId}.{classSuffix}";
+        //}
+
+
+        //private void Auth()
+        //{
+        //    //string keyPath = Path.Combine(Directory.GetCurrentDirectory(), "GoogleKeys", "natchibaech-793937ea412e.json");
+        //    credentials=  (ServiceAccountCredential) GoogleCredential.FromFile(keyFilePath)
+        //        .CreateScoped(WalletobjectsService.ScopeConstants.WalletObjectIssuer);
+
+        //    //googleCredential = GoogleCredential
+        //    //    .FromFile(keyFilePath)
+        //    //    .CreateScoped(new[] {
+        //    //    WalletobjectsService.ScopeConstants.WalletObjectIssuer
+        //    //    });
+
+        //    service = new WalletobjectsService(new BaseClientService.Initializer()
+        //    {
+        //        HttpClientInitializer = credential,
+        //        ApplicationName = "Travel Site"
+        //    });
+        //}
+
+
+
         private string CreateClass()
         {
-            Stream responseStream = service.Eventticketclass
-                .Get($"{issuerId}.{classSuffix}")
-                .ExecuteAsStream();
-
-            StreamReader responseReader = new StreamReader(responseStream);
-            JObject jsonResponse = JObject.Parse(responseReader.ReadToEnd());
-
-            if (!jsonResponse.ContainsKey("error"))
+            try
             {
-                Console.WriteLine($"Class {issuerId}.{classSuffix} already exists!");
-                return $"{issuerId}.{classSuffix}";
+                // Try to fetch existing class
+                var existingClass = service.Eventticketclass
+                    .Get($"{issuerId}.{classSuffix}")
+                    .Execute();
+
+                Console.WriteLine($"Class {existingClass.Id} already exists!");
+                return existingClass.Id;
             }
-            else if (jsonResponse["error"].Value<int>("code") != 404)
+            catch (Google.GoogleApiException ex) when (ex.HttpStatusCode == System.Net.HttpStatusCode.NotFound)
             {
-                Console.WriteLine(jsonResponse.ToString());
-                return $"{issuerId}.{classSuffix}";
-            }
+                // Class not found → create a new one
+                Console.WriteLine($"Class {issuerId}.{classSuffix} not found. Creating new class...");
 
-            EventTicketClass newClass = new EventTicketClass
-            {
-                EventId = $"{issuerId}.{classSuffix}",
-                EventName = new LocalizedString
+                var newClass = new EventTicketClass
                 {
-                    DefaultValue = new TranslatedString
-                    {
-                        Language = "en-US",
-                        Value = "Event Ticket"
-                    }
-                },
-                Id = $"{issuerId}.{classSuffix}",
-                IssuerName = "Travel Site",
-                ReviewStatus = "UNDER_REVIEW",//SUBMIT
-                // Optional: Add more class properties like logo, venue, etc.
-                Venue = new EventVenue
-                {
-                    Name = new LocalizedString
+                    Id = $"{issuerId}.{classSuffix}",
+                    EventName = new LocalizedString
                     {
                         DefaultValue = new TranslatedString
                         {
                             Language = "en-US",
-                            Value = "Event Venue"
+                            Value = "Event Ticket"
                         }
                     },
-                    Address = new LocalizedString
+                    IssuerName = "Travel Site",
+                    ReviewStatus = "UNDER_REVIEW", // or "SUBMIT"
+                    Venue = new EventVenue
                     {
-                        DefaultValue = new TranslatedString
+                        Name = new LocalizedString
                         {
-                            Language = "en-US",
-                            Value = "123 Event St, City, Country"
+                            DefaultValue = new TranslatedString
+                            {
+                                Language = "en-US",
+                                Value = "Event Venue"
+                            }
+                        },
+                        Address = new LocalizedString
+                        {
+                            DefaultValue = new TranslatedString
+                            {
+                                Language = "en-US",
+                                Value = "123 Event St, City, Country"
+                            }
                         }
                     }
-                }
-            };
+                };
 
-            responseStream = service.Eventticketclass
-                .Insert(newClass)
-                .ExecuteAsStream();
+                var insertedClass = service.Eventticketclass.Insert(newClass).Execute();
+                Console.WriteLine("Class created successfully");
+                Console.WriteLine($"Class ID: {insertedClass.Id}");
 
-            responseReader = new StreamReader(responseStream);
-            jsonResponse = JObject.Parse(responseReader.ReadToEnd());
-
-            Console.WriteLine("Class insert response");
-            Console.WriteLine(jsonResponse.ToString());
-
-            return $"{issuerId}.{classSuffix}";
+                return insertedClass.Id;
+            }
+            catch (Google.GoogleApiException ex)
+            {
+                // Handle other Google API errors (401, 403, etc.)
+                Console.WriteLine($"Google API error: {ex.HttpStatusCode} - {ex.Message}");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Handle unexpected errors
+                Console.WriteLine($"Unexpected error creating class: {ex.Message}");
+                throw;
+            }
         }
 
         /// <summary>
@@ -1599,7 +1700,260 @@ namespace TicketingSystem.Services
 
             return walletLink;
         }
+
+        //private string CreateJWTForTicket(string objectId, string classId)
+        //{
+        //    JsonSerializerSettings excludeNulls = new JsonSerializerSettings()
+        //    {
+        //        NullValueHandling = NullValueHandling.Ignore
+        //    };
+
+        //    // Create payload with the event ticket object
+        //    Dictionary<string, object> objectsToAdd = new Dictionary<string, object>
+        //{
+        //    {
+        //        "eventTicketObjects", new List<EventTicketObject>
+        //        {
+        //            new EventTicketObject
+        //            {
+        //                Id = objectId,
+        //                ClassId = classId
+        //            }
+        //        }
+        //    }
+        //};
+
+        //    // Create JSON payload
+        //    JObject serializedPayload = JObject.Parse(
+        //        JsonConvert.SerializeObject(objectsToAdd, excludeNulls));
+
+        //    // Create JWT payload
+        //    JObject jwtPayload = JObject.Parse(JsonConvert.SerializeObject(new
+        //    {
+        //        iss = credentials.Id,
+        //        aud = "google",
+        //        origins = new string[] { "www.example.com" }, // Replace with your domain
+        //        typ = "savetowallet",
+        //        payload = serializedPayload
+        //    }));
+
+        //    // Deserialize into JwtPayload
+        //    JwtPayload claims = JwtPayload.Deserialize(jwtPayload.ToString());
+
+        //    // Sign the JWT
+        //    RsaSecurityKey key = new RsaSecurityKey(credentials.Key);
+        //    SigningCredentials signingCredentials = new SigningCredentials(
+        //        key, SecurityAlgorithms.RsaSha256);
+        //    JwtSecurityToken jwt = new JwtSecurityToken(
+        //        new JwtHeader(signingCredentials), claims);
+        //    string token = new JwtSecurityTokenHandler().WriteToken(jwt);
+
+        //    string walletLink = $"https://pay.google.com/gp/v/save/{token}";
+        //    Console.WriteLine("Add to Google Wallet link");
+        //    Console.WriteLine(walletLink);
+
+        //    return walletLink;
+        //}
+    
+    
+    
     }
+
+
+
+    //public class GoogleWalletService3 : IGoogleWalletService3
+    //{
+    //    private GoogleCredential googleCredential;
+    //    private WalletobjectsService service;
+    //    private readonly string issuerId;
+    //    private readonly string classSuffix;
+    //    private readonly string keyFilePath;
+    //    private IHostingEnvironment _env;
+
+    //    public GoogleWalletService3(IConfiguration configuration, IHostingEnvironment env)
+    //    {
+    //        _env = env;
+    //        var walletSettings = configuration.GetSection("GoogleWalletSettings");
+
+    //        //keyFilePath = Path.Combine(_env.w, "GoogleKeys", "natchibaech-9e515a4f00be.json");
+    //        //string keyPath = Path.Combine(Directory.GetCurrentDirectory(), "natchibaech-9e515a4f00be.json");
+    //        //GoogleCredential credential = GoogleCredential.FromFile(keyPath)
+    //        //    .CreateScoped(WalletobjectsService.ScopeConstants.WalletObjectIssuer);
+
+    //        issuerId = walletSettings["IssuerId"];
+    //        classSuffix = walletSettings["ClassId"];
+    //        Auth();
+    //    }
+
+    //    private void Auth()
+    //    {
+    //        string keyPath = Path.Combine(Directory.GetCurrentDirectory(), "GoogleKeys", "natchibaech-793937ea412e.json");
+    //        GoogleCredential credential = GoogleCredential.FromFile(keyPath)
+    //            .CreateScoped(WalletobjectsService.ScopeConstants.WalletObjectIssuer);
+
+    //        //googleCredential = GoogleCredential
+    //        //    .FromFile(keyFilePath)
+    //        //    .CreateScoped(new[] {
+    //        //    WalletobjectsService.ScopeConstants.WalletObjectIssuer
+    //        //    });
+
+    //        service = new WalletobjectsService(new BaseClientService.Initializer()
+    //        {
+    //            HttpClientInitializer = credential,
+    //            ApplicationName = "Travel Site"
+    //        });
+    //    }
+
+    //    private string CreateClass()
+    //    {
+    //        try
+    //        {
+    //            var existingClass = service.Eventticketclass
+    //                .Get($"{issuerId}.{classSuffix}")
+    //                .Execute();
+
+    //            Console.WriteLine($"Class {existingClass.Id} already exists!");
+    //            return existingClass.Id;
+    //        }
+    //        catch (Google.GoogleApiException ex) when (ex.HttpStatusCode == System.Net.HttpStatusCode.NotFound)
+    //        {
+    //            Console.WriteLine($"Class {issuerId}.{classSuffix} not found. Creating new class...");
+
+    //            var newClass = new EventTicketClass
+    //            {
+    //                Id = $"{issuerId}.{classSuffix}",
+    //                EventName = new LocalizedString
+    //                {
+    //                    DefaultValue = new TranslatedString
+    //                    {
+    //                        Language = "en-US",
+    //                        Value = "Event Ticket"
+    //                    }
+    //                },
+    //                IssuerName = "Travel Site",
+    //                ReviewStatus = "UNDER_REVIEW",
+    //                Venue = new EventVenue
+    //                {
+    //                    Name = new LocalizedString
+    //                    {
+    //                        DefaultValue = new TranslatedString
+    //                        {
+    //                            Language = "en-US",
+    //                            Value = "Event Venue"
+    //                        }
+    //                    },
+    //                    Address = new LocalizedString
+    //                    {
+    //                        DefaultValue = new TranslatedString
+    //                        {
+    //                            Language = "en-US",
+    //                            Value = "123 Event St, City, Country"
+    //                        }
+    //                    }
+    //                }
+    //            };
+
+    //            var insertedClass = service.Eventticketclass.Insert(newClass).Execute();
+    //            Console.WriteLine("Class created successfully");
+    //            return insertedClass.Id;
+    //        }
+    //    }
+
+    //    public string CreateTicketWalletLink(Ticket ticket)
+    //    {
+    //        string classId = CreateClass();
+
+    //        EventTicketObject ticketObject = new EventTicketObject
+    //        {
+    //            Id = $"{issuerId}.{ticket.TicketNumber}",
+    //            ClassId = classId,
+    //            State = "ACTIVE",
+    //            TicketHolderName = ticket.MemberName,
+    //            TicketNumber = ticket.TicketNumber,
+    //            TicketType = new LocalizedString
+    //            {
+    //                DefaultValue = new TranslatedString
+    //                {
+    //                    Language = "en-US",
+    //                    Value = "General Admission"
+    //                }
+    //            },
+    //            ValidTimeInterval = new TimeInterval
+    //            {
+    //                Start = new Google.Apis.Walletobjects.v1.Data.DateTime
+    //                {
+    //                    Date = ticket.PurchaseDate.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'")
+    //                },
+    //                End = new Google.Apis.Walletobjects.v1.Data.DateTime
+    //                {
+    //                    Date = ticket.ExpiryDate.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'")
+    //                }
+    //            }
+    //        };
+
+    //        var insertedObject = service.Eventticketobject.Insert(ticketObject).Execute();
+
+    //        return CreateJWTForTicket(insertedObject.Id, classId);
+    //    }
+
+    //    private string CreateJWTForTicket(string objectId, string classId)
+    //    {
+    //        JsonSerializerSettings excludeNulls = new JsonSerializerSettings()
+    //        {
+    //            NullValueHandling = NullValueHandling.Ignore
+    //        };
+
+    //        var objectsToAdd = new Dictionary<string, object>
+    //    {
+    //        {
+    //            "eventTicketObjects", new List<EventTicketObject>
+    //            {
+    //                new EventTicketObject
+    //                {
+    //                    Id = objectId,
+    //                    ClassId = classId
+    //                }
+    //            }
+    //        }
+    //    };
+
+    //        JObject serializedPayload = JObject.Parse(
+    //            JsonConvert.SerializeObject(objectsToAdd, excludeNulls));
+
+    //        // Now safely cast googleCredential to ServiceAccountCredential
+    //        var sac = googleCredential.UnderlyingCredential as ServiceAccountCredential;
+
+    //        if (sac == null)
+    //            throw new InvalidOperationException("Expected a ServiceAccountCredential");
+
+    //        JObject jwtPayload = JObject.Parse(JsonConvert.SerializeObject(new
+    //        {
+    //            iss = sac.Id, // service account email
+    //            aud = "google",
+    //            origins = new[] { "www.example.com" }, // replace with your domain
+    //            typ = "savetowallet",
+    //            payload = serializedPayload
+    //        }));
+
+    //        JwtPayload claims = JwtPayload.Deserialize(jwtPayload.ToString());
+
+    //        RsaSecurityKey key = new RsaSecurityKey(sac.Key);
+    //        SigningCredentials signingCredentials = new SigningCredentials(
+    //            key, SecurityAlgorithms.RsaSha256);
+
+    //        JwtSecurityToken jwt = new JwtSecurityToken(
+    //            new JwtHeader(signingCredentials), claims);
+
+    //        string token = new JwtSecurityTokenHandler().WriteToken(jwt);
+
+    //        string walletLink = $"https://pay.google.com/gp/v/save/{token}";
+    //        Console.WriteLine("Add to Google Wallet link");
+    //        Console.WriteLine(walletLink);
+
+    //        return walletLink;
+    //    }
+    //}
+
 
     public interface IGoogleWalletService3
     {

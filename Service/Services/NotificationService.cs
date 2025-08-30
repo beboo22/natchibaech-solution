@@ -249,12 +249,6 @@ namespace TicketingSystem.Services
     DateTime expiryDate,
     string qrCodeBase64)
         {
-            var logoPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/logo.png");
-            var logoBytes = File.ReadAllBytes(logoPath);
-            var logoBase64 = Convert.ToBase64String(logoBytes);
-
-
-
 
             return $@"
 <!DOCTYPE html>
@@ -341,7 +335,7 @@ namespace TicketingSystem.Services
     <!-- LEFT CARD -->
     <div class='card'>
       <div class='header-logo'>
-        <img src='https://drive.google.com/file/d/1fcEA27_rpnBE2bUrj-asSJMdDhwpIlRf/view?usp=sharing' alt='Logo' />
+        <img src='https://iili.io/KKJWVql.png' alt='Logo' />
         <h3>NATCHI BAECH</h3>
       </div>
 
@@ -358,8 +352,8 @@ namespace TicketingSystem.Services
 
       
       <div class='wallet-buttons'>
-        <img src='https://developer.apple.com/design/human-interface-guidelines/apple-pay/images/add-to-apple-wallet-button.png' alt='Apple Wallet' />
-        <img src='https://upload.wikimedia.org/wikipedia/commons/5/5a/Google_Pay_Logo.svg' alt='Google Wallet' />
+        <img src='https://iili.io/KKJShOl.jpg' alt='Apple Wallet' />
+        <img src='https://iili.io/KKJOkI1.png' alt='Google Wallet' />
       </div>
     </div>
 

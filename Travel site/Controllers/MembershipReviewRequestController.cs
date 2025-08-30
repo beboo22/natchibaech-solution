@@ -51,6 +51,9 @@ namespace Travel_site.Controllers
                 return NotFound(new ApiResponse(404, "There's no MembershipReviewRequest by this id"));
             try
             {
+                item.Status = status;
+                _context.MembershipReviewRequests.Update(item);
+                _context.SaveChanges();
                 if(status == ReviewStatus.Approved)
                 {
                     var existingCard = await _context.MembershipCards
@@ -60,9 +63,6 @@ namespace Travel_site.Controllers
 
                     await _context.MemberShips.AddAsync(membership);
                 }
-                item.Status = status;
-                _context.MembershipReviewRequests.Update(item);
-                _context.SaveChanges();
             }
             catch (Exception ex)
             {
