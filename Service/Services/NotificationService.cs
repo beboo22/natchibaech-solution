@@ -66,7 +66,9 @@ namespace TicketingSystem.Services
 
         }
         #endregion
-            #region test by Twilio
+        
+        
+        #region test by Twilio
 
         public async Task<bool> SendTicketByWhatsAppAsync(string phoneNumber, string ticketNumber, string qrCodeBase64, string memberName, DateTime expiryDate)
         {
@@ -247,6 +249,13 @@ namespace TicketingSystem.Services
     DateTime expiryDate,
     string qrCodeBase64)
         {
+            var logoPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/logo.png");
+            var logoBytes = File.ReadAllBytes(logoPath);
+            var logoBase64 = Convert.ToBase64String(logoBytes);
+
+
+
+
             return $@"
 <!DOCTYPE html>
 <html>
@@ -332,7 +341,7 @@ namespace TicketingSystem.Services
     <!-- LEFT CARD -->
     <div class='card'>
       <div class='header-logo'>
-        <img src='https://i.ibb.co/4Wc7Z5p/beach-logo.png' alt='Logo' />
+        <img src='https://drive.google.com/file/d/1fcEA27_rpnBE2bUrj-asSJMdDhwpIlRf/view?usp=sharing' alt='Logo' />
         <h3>NATCHI BAECH</h3>
       </div>
 

@@ -12,11 +12,11 @@ namespace Travel_site.Controllers
         private readonly IQRCodeService _qrCodeService;
 
         INotificationService _notificationService;
-        private readonly IGoogleWalletService _walletService;
+        private readonly IGoogleWalletService3 _walletService;
         IConfiguration _configuration;
         //private IPaymobService _paymobService;
 
-        public TestController(INotificationService notificationService, IQRCodeService qrCodeService, IGoogleWalletService walletService, IConfiguration configuration)
+        public TestController(INotificationService notificationService, IQRCodeService qrCodeService, IGoogleWalletService3 walletService, IConfiguration configuration)
         {
             _notificationService = notificationService;
             _qrCodeService = qrCodeService;
@@ -69,14 +69,14 @@ namespace Travel_site.Controllers
 
         //    return Ok($"https://ksa.paymob.com/api/acceptance/iframes/{_configuration["PaymobSettings: IframeId"]}?payment_token={Req.Token}");
         //}
-     
-        //[HttpGet]
-        //public async Task TestEmail()
-        //{
-        //    var qrCodeData = GenerateMembershipQRData("123", "beboo", UserCategory.Men, DateTime.UtcNow.AddYears(1));
-        //    var qrCode = _qrCodeService.GenerateQRCode(qrCodeData);
-        //    await _notificationService.SendTicketByEmailAsync("moammedtareq8@gmail.com", "1333", qrCode, "beboo", DateTime.UtcNow.AddMonths(1));
-        //}
+
+        [HttpGet]
+        public async Task TestEmail()
+        {
+            var qrCodeData = GenerateMembershipQRData("123", "beboo", UserType.male, DateTime.UtcNow.AddYears(1));
+            var qrCode = _qrCodeService.GenerateQRCode(qrCodeData);
+            await _notificationService.SendTicketByEmailAsync("moammedtareq8@gmail.com", "1333", qrCode, "beboo", DateTime.UtcNow.AddMonths(1));
+        }
         //[HttpGet("/wh")]
         //public async Task TestWhats()
         //{

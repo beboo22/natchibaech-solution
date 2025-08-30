@@ -156,7 +156,7 @@ namespace TicketingSystem.Controllers
         /// <summary>
         /// Get user's membership card
         /// </summary>
-        [HttpGet("{userId}")]
+        [HttpGet("{Email}")]
         public async Task<ActionResult> GetMembershipCard(string Email)
         {
             try
@@ -226,7 +226,7 @@ namespace TicketingSystem.Controllers
         /// <summary>
         /// Update membership card details (Admin only)
         /// </summary>
-        [HttpPut("{userId}")]
+        [HttpPut("{Email}")]
         public async Task<ActionResult> UpdateMembershipCard(string Email, [FromBody] UpdateMembershipDto updateDto)
         {
             try
@@ -252,7 +252,7 @@ namespace TicketingSystem.Controllers
         /// <summary>
         /// Renew membership card
         /// </summary>
-        [HttpPost("{userId}/renew")]
+        [HttpPost("{Email}/renew")]
         public async Task<ActionResult> RenewMembershipCard(string Email, [FromQuery] int months = 12)
         {
             try

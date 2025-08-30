@@ -15,8 +15,8 @@ namespace Travelsite.DTOs
         public decimal FinalAmount { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
-        public string BillingFirstName { get; set; } = string.Empty;
-        public string BillingLastName { get; set; } = string.Empty;
+        public string BillingFUllName { get; set; } = string.Empty;
+        //public string BillingLastName { get; set; } = string.Empty;
         public string Country { get; set; } = string.Empty;
         public string IdNumber { get; set; } = string.Empty;
         public List<OrderItemDto> OrderItems { get; set; } = new List<OrderItemDto>();
@@ -29,12 +29,8 @@ namespace Travelsite.DTOs
         public string Email { get; set; }
         
         [Required]
-        [MaxLength(50)]
-        public string BillingFirstName { get; set; } = string.Empty;
-        
-        [Required]
-        [MaxLength(50)]
-        public string BillingLastName { get; set; } = string.Empty;
+        [MaxLength(150)]
+        public string BillingFUllName { get; set; } = string.Empty;
         
         [Required]
         [MaxLength(50)]
@@ -70,8 +66,8 @@ namespace Travelsite.DTOs
 
         public DateTime BookingDate { get; set; }
 
-        [Column(TypeName = "decimal(18,2)")]
-        public decimal UnitPrice { get; set; }
+        //[Column(TypeName = "decimal(18,2)")]
+        //public decimal UnitPrice { get; set; }
 
 
 

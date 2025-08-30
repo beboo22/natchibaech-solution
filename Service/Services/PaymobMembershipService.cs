@@ -36,10 +36,6 @@ namespace Service.Services
         {
             try
             {
-                //var item = await  _context.MemberShip
-                // .Include(mc => mc.MembershipCard)
-                // .Include(c=>c.User)
-                // .FirstOrDefaultAsync(mc => mc.Id == membership.Id);
 
                 // Step 1: Get authentication token
                 var authToken = await GetAuthTokenAsync();
@@ -51,8 +47,6 @@ namespace Service.Services
                 var paymentKey = await GetPaymentKeyAsync(authToken, paymobOrder.Id, membership);
 
                 // Step 4: Generate payment URL
-                //var paymentUrl = $"https://accept.paymob.com/api/acceptance/iframes/YOUR_IFRAME_ID?payment_token={paymentKey}";
-                //var paymentUrl = $"https://accept.paymob.com/api/acceptance/iframes/{_configuration["PaymobSettings:IframeId"]}?payment_token={paymentKey}";
                 var paymentUrl = $"https://ksa.paymob.com/api/acceptance/iframes/{_configuration["PaymobSettings:IframeId"]}?payment_token={paymentKey}";
 
 
@@ -146,7 +140,7 @@ namespace Service.Services
             throw new InvalidOperationException($"Failed to get auth token from Paymob after {maxRetries} attempts");
         }
 
-        private async Task<PaymobOrderResponse> CreatePaymobOrderAsync(string authToken, MemberShip membership, string? callbackUrl = "https://ef0318b2efaa.ngrok-free.app/api/Transactions/paymob/GenericConfirm")
+        private async Task<PaymobOrderResponse> CreatePaymobOrderAsync(string authToken, MemberShip membership, string? callbackUrl = null)
         {
             var orderRequest = new
             {

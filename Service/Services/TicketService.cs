@@ -32,7 +32,7 @@ namespace TicketingSystem.Services
             if (ticket == null)
                 throw new ArgumentException("Ticket not found");
 
-            if (ticket.OrderItem.Order.Status != OrderStatus.Paid)
+            if ((ticket.OrderItem != null ? ticket.OrderItem.Order.Status : ticket.MemberShip.Status) != OrderStatus.Paid)
                 throw new InvalidOperationException("Ticket must be from a paid order");
 
             if (ticket.ExpiryDate <= DateTime.UtcNow)
@@ -146,7 +146,7 @@ namespace TicketingSystem.Services
                     .ThenInclude(o => o.Order)
                     .ThenInclude(o => o.User)
                     
-                    .Include(t=>t.OrderItem)
+                    .Include(t=>t.MemberShip).ThenInclude(u=>u.User)
                     //.ThenInclude(o=>o.Product)
                     //.ThenInclude(o=>o.p)
                 .FirstOrDefaultAsync(t => t.TicketNumber == ticketNumber);
@@ -203,14 +203,16 @@ namespace TicketingSystem.Services
         {
             var ticket = await _context.Tickets
                 .Include(t => t.OrderItem)
-                    //.ThenInclude(o => o.Order)
-                    //.ThenInclude(o => o.User)
+                    .ThenInclude(o => o.Order)
+                    .ThenInclude(o => o.User)
+                .Include(u=>u.MemberShip).ThenInclude(u=>u.User)
+
                 .FirstOrDefaultAsync(t => t.Id == ticketId);
 
             if (ticket == null)
                 return false;
 
-            var user = ticket.OrderItem.Order.User;
+            var user = ticket.OrderItem != null? ticket.OrderItem.Order.User:ticket.MemberShip?.User;
             if (user == null)
                 return false;
 
@@ -369,6 +371,9 @@ namespace TicketingSystem.Services
                 DeliveryMethod = TicketDelivery.Email
             };
             await _context.Tickets.AddAsync(item);
+
+            await _context.SaveChangesAsync();
+
 
             return item;
 

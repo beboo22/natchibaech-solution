@@ -103,8 +103,8 @@ namespace TicketingSystem.Controllers
                 {
                     UserId = user.Id,
                     UserEmail = user.Email,
-                    BillingFirstName = createOrderDto.BillingFirstName,
-                    BillingLastName = createOrderDto.BillingLastName,
+                    BillingFirstName = createOrderDto.BillingFUllName.Split("")[0],
+                    BillingLastName = createOrderDto.BillingFUllName.Split("")[1],
                     Country = createOrderDto.Country,
                     IdNumber = createOrderDto.IdNumber,
                     Status = OrderStatus.Pending,
@@ -191,8 +191,8 @@ namespace TicketingSystem.Controllers
                 FinalAmount = order.FinalAmount,
                 CreatedAt = order.CreatedAt,
                 UpdatedAt = order.UpdatedAt,
-                BillingFirstName = order.BillingFirstName,
-                BillingLastName = order.BillingLastName,
+                BillingFUllName = $"{order.BillingFirstName} {order.BillingLastName}",
+                //BillingLastName = order.BillingLastName,
                 Country = order.Country,
                 IdNumber = order.IdNumber,
                 OrderItems = order.OrderItems?.Select(oi => new OrderItemDto

@@ -5,6 +5,7 @@ namespace TicketingSystem.Services
 {
     public interface IMembershipService
     {
+        Task<MemberShip> CompleteMembershipIssuanceAsync(int reviewRequestId);
         Task<MemberShip> IssueMembershipAsync(IssueMembershipCardDto issue);
         Task<MemberShip?> GetMembershipAsync(string Email);
         Task<MemberShip?> UpdateMembershipStatusAsync(int membershipId, OrderStatus item);

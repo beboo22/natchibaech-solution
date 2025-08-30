@@ -18,7 +18,7 @@ namespace TicketingSystem.Controllers
     [Route("api/[controller]")]
     public class TransactionsController : ControllerBase
     {
-        private readonly string _hmacSecret = "396ED95BE69D71C17ADDEB1DBEF9747E";
+        //private readonly string _hmacSecret = "396ED95BE69D71C17ADDEB1DBEF9747E";
         private readonly ITransactionService _transactionService;
         //private IPaymobMembershipServiceNew _paymobServiceNew;
         private IPaymobService _paymobServiceOld;
@@ -468,77 +468,77 @@ namespace TicketingSystem.Controllers
             }
         }
 
-        private bool IsValidHmac(PaymobTransaction callback)
-        {
-            string Safe(object? value)
-                => value switch
-                {
-                    null => string.Empty,
-                    bool b => b.ToString().ToLower(),  // normalize booleans
-                    System.DateTime dt => dt.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ"),
-                    _ => value.ToString() ?? string.Empty
-                };
+        //private bool IsValidHmac(PaymobTransaction callback)
+        //{
+        //    string Safe(object? value)
+        //        => value switch
+        //        {
+        //            null => string.Empty,
+        //            bool b => b.ToString().ToLower(),  // normalize booleans
+        //            System.DateTime dt => dt.ToString("yyyy-MM-ddTHH:mm:ss.ffffffZ"),
+        //            _ => value.ToString() ?? string.Empty
+        //        };
 
-            var hmacDataString = string.Join(":",
-                Safe(callback?.AmountCents),
-                Safe(callback?.CreatedAt),
-                Safe(callback?.Order?.Currency),
-                Safe(callback?.ErrorOccured),
-                Safe(callback?.HasParentTransaction),
-                Safe(callback?.Id),
-                Safe(callback?.Is3dSecure),
-                Safe(callback?.Order?.Id),
-                Safe(callback?.IsCaptured),
-                Safe(callback?.IsRefunded),
-                Safe(callback?.IsStandalonePayment),
-                Safe(callback?.IsVoided),
-                Safe(callback?.Pending),
-                Safe(callback?.ProfileId),
-                Safe(callback?.Success)
-            );
+        //    var hmacDataString = string.Join(":",
+        //        Safe(callback?.AmountCents),
+        //        Safe(callback?.CreatedAt),
+        //        Safe(callback?.Order?.Currency),
+        //        Safe(callback?.ErrorOccured),
+        //        Safe(callback?.HasParentTransaction),
+        //        Safe(callback?.Id),
+        //        Safe(callback?.Is3dSecure),
+        //        Safe(callback?.Order?.Id),
+        //        Safe(callback?.IsCaptured),
+        //        Safe(callback?.IsRefunded),
+        //        Safe(callback?.IsStandalonePayment),
+        //        Safe(callback?.IsVoided),
+        //        Safe(callback?.Pending),
+        //        Safe(callback?.ProfileId),
+        //        Safe(callback?.Success)
+        //    );
 
-            var computedHmac = ComputeHmacSha256(hmacDataString, _hmacSecret);
+        //    var computedHmac = ComputeHmacSha256(hmacDataString, _hmacSecret);
 
-            return string.Equals(computedHmac, callback?.Hmac, StringComparison.OrdinalIgnoreCase);
-        }
+        //    return string.Equals(computedHmac, callback?.Hmac, StringComparison.OrdinalIgnoreCase);
+        //}
 
-        private async Task<bool> VerifyWebhookAsync(PaymobTransaction webhook, string receivedHmac)
-        {
-            if (webhook == null) return false;
+        //private async Task<bool> VerifyWebhookAsync(PaymobTransaction webhook, string receivedHmac)
+        //{
+        //    if (webhook == null) return false;
 
-            try
-            {
-                var hmacString =
-                    $"{webhook.AmountCents}" +
-                    $"{webhook.CreatedAt}" +
-                    $"{webhook.Currency}" +
-                    $"{webhook.ErrorOccured.ToString().ToLower()}" +
-                    $"{webhook.HasParentTransaction.ToString().ToLower()}" +
-                    $"{webhook.Id}" +
-                    $"{webhook.IntegrationId}" +
-                    $"{webhook.Is3dSecure.ToString().ToLower()}" +
-                    $"{webhook.IsAuth.ToString().ToLower()}" +
-                    $"{webhook.IsCapture.ToString().ToLower()}" +
-                    $"{webhook.IsRefunded.ToString().ToLower()}" +
-                    $"{webhook.IsStandalonePayment.ToString().ToLower()}" +
-                    $"{webhook.IsVoided.ToString().ToLower()}" +
-                    $"{(webhook.Order?.Id.ToString() ?? "")}" +
-                    //$"{webhook.Owner}" +  //  usually not required
-                    $"{webhook.Pending.ToString().ToLower()}" +
-                    $"{(webhook.SourceData?.Pan ?? "")}" +
-                    $"{(webhook.SourceData?.SubType ?? "")}" +
-                    $"{(webhook.SourceData?.Type ?? "")}" +
-                    $"{webhook.Success.ToString().ToLower()}";
+        //    try
+        //    {
+        //        var hmacString =
+        //            $"{webhook.AmountCents}" +
+        //            $"{webhook.CreatedAt}" +
+        //            $"{webhook.Currency}" +
+        //            $"{webhook.ErrorOccured.ToString().ToLower()}" +
+        //            $"{webhook.HasParentTransaction.ToString().ToLower()}" +
+        //            $"{webhook.Id}" +
+        //            $"{webhook.IntegrationId}" +
+        //            $"{webhook.Is3dSecure.ToString().ToLower()}" +
+        //            $"{webhook.IsAuth.ToString().ToLower()}" +
+        //            $"{webhook.IsCapture.ToString().ToLower()}" +
+        //            $"{webhook.IsRefunded.ToString().ToLower()}" +
+        //            $"{webhook.IsStandalonePayment.ToString().ToLower()}" +
+        //            $"{webhook.IsVoided.ToString().ToLower()}" +
+        //            $"{(webhook.Order?.Id.ToString() ?? "")}" +
+        //            //$"{webhook.Owner}" +  //  usually not required
+        //            $"{webhook.Pending.ToString().ToLower()}" +
+        //            $"{(webhook.SourceData?.Pan ?? "")}" +
+        //            $"{(webhook.SourceData?.SubType ?? "")}" +
+        //            $"{(webhook.SourceData?.Type ?? "")}" +
+        //            $"{webhook.Success.ToString().ToLower()}";
 
-                var computedHmac = ComputeHmacSha512(hmacString, _hmacSecret);
+        //        var computedHmac = ComputeHmacSha512(hmacString, _hmacSecret);
 
-                return computedHmac.Equals(receivedHmac, StringComparison.OrdinalIgnoreCase);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
+        //        return computedHmac.Equals(receivedHmac, StringComparison.OrdinalIgnoreCase);
+        //    }
+        //    catch (Exception)
+        //    {
+        //        return false;
+        //    }
+        //}
 
 
 

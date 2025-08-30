@@ -30,7 +30,7 @@ namespace Travelsite.DTOs
         public string? Email { get; set; }
         public TicketDelivery DeliveryMethod { get; set; } = TicketDelivery.Email;
         
-        public int ValidityDays { get; set; } = 30;
+        //public int ValidityDays { get; set; } = 30;
     }
 
     public class SendTicketDto

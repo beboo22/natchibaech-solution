@@ -90,7 +90,7 @@ namespace TicketingSystem.Services
                 throw new ArgumentException("MemberShip Card not found");
 
             if (order.Status != OrderStatus.Pending)
-                throw new InvalidOperationException("MemberShip Card is not in pending status");
+                throw new InvalidOperationException("MemberShip is not in pending status");
 
 
             // Create transaction record

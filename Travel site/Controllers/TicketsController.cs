@@ -53,7 +53,7 @@ namespace TicketingSystem.Controllers
                 return StatusCode(500, new { message = "An error occurred while generating tickets", error = ex.Message });
             }
         }
-        [HttpPost("generateMemberShioTickets/{orderId}")]
+        [HttpPost("generateMemberShioTickets/{MemberId}")]
         public async Task<ActionResult<IEnumerable<TicketDto>>> GenerateMemberShipTickets(int MemberId, [FromBody] GenerateTicketsDto? generateDto = null)
         {
             try

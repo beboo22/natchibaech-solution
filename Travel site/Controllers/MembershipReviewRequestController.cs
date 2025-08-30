@@ -1,4 +1,4 @@
-﻿using Domain.Entity;
+﻿    using Domain.Entity;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -20,12 +20,14 @@ namespace Travel_site.Controllers
          */
         ApplicationDbContext _context;
         private readonly IQRCodeService _qrCodeService;
+        private IMembershipService _membershipService;
 
 
-        public MembershipReviewRequestController(ApplicationDbContext context, IQRCodeService qrCodeService)
+        public MembershipReviewRequestController(ApplicationDbContext context, IQRCodeService qrCodeService, IMembershipService membershipService)
         {
             _context = context;
             _qrCodeService = qrCodeService;
+            _membershipService = membershipService;
         }
 
         [HttpGet]
@@ -54,27 +56,8 @@ namespace Travel_site.Controllers
                     var existingCard = await _context.MembershipCards
                 .FirstOrDefaultAsync(mc => mc.Id == item.MembershipCardId);
 
-                    if (existingCard == null)
-                    {
-                        throw new InvalidOperationException("membership card Not found");
+                    var membership = await _membershipService.CompleteMembershipIssuanceAsync(id);
 
-                    }
-
-                    var membershipNumber = GenerateMembershipNumber(item.UserId);
-                    var qrCodeData = GenerateMembershipQRData(membershipNumber, item.User.FullName, item.User.Category, DateTime.UtcNow.AddYears(1));
-                    var qrCode = _qrCodeService.GenerateQRCode(qrCodeData);
-
-
-                    var membership = new MemberShip
-                    {
-                        MembershipCardId = item.MembershipCardId,
-                        UserId = item.UserId,
-                        MembershipNumber = membershipNumber,
-                        BookingDate = DateTime.UtcNow,
-                        Expiry = DateTime.UtcNow.AddYears(1), // Default 1 year validity
-                        QrCode = qrCode,
-                        Status = OrderStatus.Pending,
-                    };
                     await _context.MemberShips.AddAsync(membership);
                 }
                 item.Status = status;

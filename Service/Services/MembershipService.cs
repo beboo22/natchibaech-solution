@@ -36,7 +36,7 @@ namespace TicketingSystem.Services
                 };
                 _context.MembershipReviewRequests.Add(reviewRequest);
                 await _context.SaveChangesAsync();
-                throw new InvalidOperationException("Membership card issuance for this category requires admin review.");
+                throw new InvalidOperationException("Membership issuance for this category requires admin review.");
             }
 
             // Check if user already has an active membership card
@@ -246,6 +246,7 @@ namespace TicketingSystem.Services
             var qrCodeData = GenerateMembershipQRData(membershipCard.MembershipNumber, membershipCard.User.FullName, membershipCard.User.Category, membershipCard.Expiry);
             var qrCode = _qrCodeService.GenerateQRCode(qrCodeData);
             membershipCard.QrCode = qrCode;
+            //membershipCard.pr
             try
             {
                 await _context.SaveChangesAsync();

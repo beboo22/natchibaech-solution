@@ -36,7 +36,7 @@ namespace Travelsite.DTOs
         public int MembershipCardId { get; set; }
         
         
-        public int ValidityMonths { get; set; } = 12; // Default 1 year
+        //public int ValidityMonths { get; set; } = 12; // Default 1 year
         public decimal Price { get; set; } = 7000.00m;
         
         //public OrderStatus Status { get; set; }
