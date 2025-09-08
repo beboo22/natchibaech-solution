@@ -1,15 +1,10 @@
 using Domain.Entity;
-using Google.Apis.Walletobjects.v1.Data;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
-using Service.Services;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 using TicketingSystem.Services;
-using Travel_site.Controllers;
 using Travelsite.DTOs;
 
 namespace TicketingSystem.Controllers
@@ -158,132 +153,129 @@ namespace TicketingSystem.Controllers
             }
         }
 
-        [HttpPost("paymob/GenericConfirm")]
-        public async Task<IActionResult> GenericConfirm([FromQuery] string hmac)
-        {
-            try
-            {
-                var rawBody = await GetRawBodyAsync(Request);
-                if (string.IsNullOrEmpty(rawBody))
-                    return BadRequest(new { message = "Invalid payload" });
-                Console.WriteLine("RAW BODY: " + rawBody);
-
-                // Deserialize payload
-                //var callback = JsonSerializer.Deserialize<PaymobCallbacktest>(rawBody);
-                //var wrapper = JsonConvert.DeserializeObject<PaymobCallbackWrapper>(rawBody)
-                var wrapper = JsonConvert.DeserializeObject<PaymobCallbackWrapper>(rawBody)
-              ?? new PaymobCallbackWrapper();
-                if (wrapper == null || wrapper.Obj == null)
-                    return BadRequest(new { message = "Failed to parse callback payload" });
-
-                var callback = wrapper.Obj ?? new PaymobTransaction();
-                callback.Hmac = hmac; // inject query hmac
-                //Console.WriteLine(callback.ToString());
-
-                Console.WriteLine($"Id: {callback.Id}");
-                Console.WriteLine($"Pending: {callback.Pending}");
-                Console.WriteLine($"AmountCents: {callback.AmountCents}");
-                Console.WriteLine($"Success: {callback.Success}");
-                Console.WriteLine($"IsStandalonePayment: {callback.IsStandalonePayment}");
-                Console.WriteLine($"Order: Id={callback.Order.Id}, MerchantOrderId={callback.Order.MerchantOrderId}, AmountCents={callback.Order.AmountCents}, Currency={callback.Order.Currency}");
-                Console.WriteLine($"Data: Message={callback.Data.Message}, GatewayIntegrationPk={callback.Data.GatewayIntegrationPk}");
-                Console.WriteLine($"Hmac: {callback.Hmac}");
-
-                // Validate HMAC
-                //if (!await VerifyWebhookAsync(callback,hmac))
-                //    return Unauthorized(new { message = "HMAC signature verification failed" });
-
-                // Extract merchant order id
-                var merchantOrderId = callback.Order?.MerchantOrderId;
-                if (string.IsNullOrEmpty(merchantOrderId))
-                    return BadRequest(new { message = "Missing merchant_order_id" });
-
-                // Determine transaction status
-                var status = callback.Success
-                    ? TransactionStatus.Success
-                    : TransactionStatus.Failed;
-
-                // Confirm transaction based on order type
-                var confirmResult = await ConfirmTransactionAsync(merchantOrderId, status);
-                if (confirmResult is not null)
-                    return confirmResult;
-
-                //return Ok(new { message = "Webhook processed successfully" });
-                return Redirect("https://www.google.com");
-            }
-            catch (Exception ex)
-            {
-                return Redirect("https://www.google.com");
-                //return StatusCode(500, new { message = "Internal error", error = ex.Message });
-            }
-        }
-
-        #region Myproduction
-
         //[HttpPost("paymob/GenericConfirm")]
-        //public async Task<IActionResult> GenericConfirm([FromBody] PaymobWebhookDto webhook, [FromQuery] string hmac)
+        //public async Task<IActionResult> GenericConfirm()
         //{
         //    try
         //    {
-        //        //var txnResponseCode = HttpContext.Request.Query["txn_response_code"].ToString();
-        //        //if(string.IsNullOrWhiteSpace(txnResponseCode))
-        //        //    Console.WriteLine("txnResponseCode not found");
-        //        //webhook.Obj.Txn_response_code = txnResponseCode;
-        //        if (string.IsNullOrEmpty(hmac))
-        //            return BadRequest(new { message = "Missing HMAC" });
+        //        var rawBody = await GetRawBodyAsync(Request);
+        //        if (string.IsNullOrEmpty(rawBody))
+        //            return BadRequest(new { message = "Invalid payload" });
 
-        //        //var isValid = await _paymobService.VerifyWebhookAsync(webhook, hmac);
-        //        //if (!isValid)
-        //        //    return Unauthorized(new { message = "Invalid HMAC signature" });
+        //        var wrapper = JsonConvert.DeserializeObject<PaymobCallbackWrapper>(rawBody)
+        //      ?? new PaymobCallbackWrapper();
+        //        if (wrapper == null || wrapper.Obj == null)
+        //            return BadRequest(new { message = "Failed to parse callback payload" });
 
-        //        var merchantOrderId = webhook.Obj?.Order?.Merchant_order_id;
+        //        var callback = wrapper.Obj ?? new PaymobTransaction();
+        //        //callback.Hmac = hmac; // inject query hmac
+
+
+        //        // Extract merchant order id
+        //        var merchantOrderId = callback.Order?.MerchantOrderId;
         //        if (string.IsNullOrEmpty(merchantOrderId))
         //            return BadRequest(new { message = "Missing merchant_order_id" });
 
-        //        //var status = _paymobService.MapPaymobStatusToTransactionStatus(
-        //        //    webhook.Obj!.Success,
-        //        //    ""
-        //        //);
+        //        // Determine transaction status
+        //        var status = callback.Success
+        //            ? TransactionStatus.Success
+        //            : TransactionStatus.Failed;
 
-        //        var status = TransactionStatus.Pending;
-        //        if (webhook.Obj.Success)
-        //            status= TransactionStatus.Success;
-        //        else if(!webhook.Obj.Success)
-        //            status = TransactionStatus.Failed;
+        //        // Confirm transaction based on order type
+        //        var confirmResult = await ConfirmTransactionAsync(merchantOrderId, status);
+        //        if (confirmResult is not null)
+        //            return confirmResult;
 
-        //        //return
-        //        if (merchantOrderId.StartsWith("ORD/"))
-        //        {
-        //            var orderId = int.Parse(merchantOrderId.Split("/")[2]);
-        //            var transactions = await _transactionService.GetTransactionsByOrderIdAsync(orderId);
-        //            var pendingTransaction = transactions.FirstOrDefault(t => t.Status != TransactionStatus.Success);
-        //            if (pendingTransaction == null)
-        //                return NotFound(new { message = "No pending transaction or failed transaction found for this order" });
-
-        //            await _transactionService.ConfirmOrderTransactionAsync(pendingTransaction.TransactionReference, status);
-        //        }
-        //        else if (merchantOrderId.StartsWith("MEM/"))
-        //        {
-        //            var membershipId = int.Parse(merchantOrderId.Split("/")[2]);
-        //            var transactions = await _transactionService.GetTransactionsByMemberShipIdAsync(membershipId);
-        //            var pendingTransaction = transactions.FirstOrDefault(t => t.Status != TransactionStatus.Success);
-        //            if (pendingTransaction == null)
-        //                return NotFound(new { message = "No pending transaction found for this membership" });
-
-        //            await _transactionService.ConfirmMemberShipTransactionAsync(pendingTransaction.TransactionReference, status);
-        //        }
-        //        else
-        //        {
-        //            return BadRequest(new { message = "Unknown merchant_order_id format" });
-        //        }
-
-        //        return Ok(new { message = "Webhook processed successfully" });
+        //        //return Ok(new { message = "Webhook processed successfully" });
+        //        return Redirect("https://natchibaech.com/");
         //    }
         //    catch (Exception ex)
         //    {
-        //        return StatusCode(500, new { message = "Internal error", error = ex.Message });
+        //        return Redirect("https://natchibaech.com/");
+        //        //return StatusCode(500, new { message = "Internal error", error = ex.Message });
         //    }
         //}
+
+        #region Myproduction
+
+        [HttpPost("paymob/GenericConfirm")]
+        public async Task<IActionResult> GenericConfirm([FromBody] PaymobWebhookDto webhook, [FromQuery] string hmac)
+        {
+            try
+            {
+                //Console.WriteLine("########################################\nhi\n####################################");
+
+
+
+                //var txnResponseCode = HttpContext.Request.Query["txn_response_code"].ToString();
+                //if(string.IsNullOrWhiteSpace(txnResponseCode))
+                //    Console.WriteLine("txnResponseCode not found");
+                //webhook.Obj.Txn_response_code = txnResponseCode;
+                if (string.IsNullOrEmpty(hmac))
+                    return BadRequest(new { message = "Missing HMAC" });
+
+                //var isValid = await _paymobService.VerifyWebhookAsync(webhook, hmac);
+                //if (!isValid)
+                //    return Unauthorized(new { message = "Invalid HMAC signature" });
+
+                var merchantOrderId = webhook.Obj?.Order?.Merchant_order_id;
+                if (string.IsNullOrEmpty(merchantOrderId))
+                    return BadRequest(new { message = "Missing merchant_order_id" });
+
+                //var status = _paymobService.MapPaymobStatusToTransactionStatus(
+                //    webhook.Obj!.Success,
+                //    ""
+                //);
+
+                var status = TransactionStatus.Pending;
+                if (webhook.Obj.Success)
+                    status = TransactionStatus.Success;
+                else if (!webhook.Obj.Success)
+                    status = TransactionStatus.Failed;
+
+                //return
+                if (merchantOrderId.StartsWith("ORD/"))
+                {
+                    var orderId = int.Parse(merchantOrderId.Split("/")[2]);
+                    var transactions = await _transactionService.GetTransactionsByOrderIdAsync(orderId);
+                    var pendingTransaction = transactions.FirstOrDefault(t => t.Status != TransactionStatus.Success);
+                    if (pendingTransaction == null)
+                        return NotFound(new { message = "No pending transaction or failed transaction found for this order" });
+
+                    await _transactionService.ConfirmOrderTransactionAsync(pendingTransaction.TransactionReference, status);
+                }
+                else if (merchantOrderId.StartsWith("MEM/"))
+                {
+                    var membershipId = int.Parse(merchantOrderId.Split("/")[2]);
+                    var transactions = await _transactionService.GetTransactionsByMemberShipIdAsync(membershipId);
+                    var pendingTransaction = transactions.FirstOrDefault(t => t.Status != TransactionStatus.Success);
+                    if (pendingTransaction == null)
+                        return NotFound(new { message = "No pending transaction found for this membership" });
+
+                    await _transactionService.ConfirmMemberShipTransactionAsync(pendingTransaction.TransactionReference, status);
+                }
+                else
+                {
+                    return BadRequest(new { message = "Unknown merchant_order_id format" });
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Internal error", error = ex.Message });
+            }
+            //return Redirect("https://natchibaech.com/");
+            return Ok();
+        }
+
+
+        [HttpGet("paymob/PaymentResult")]
+        public IActionResult PaymentResult([FromQuery] string success, [FromQuery] string merchant_order_id)
+        {
+            return Redirect("https://natchibaech.com/");
+        }
+
+
+
 
         #endregion
 

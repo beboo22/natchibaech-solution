@@ -12,11 +12,11 @@ namespace TicketingSystem.Controllers
     public class OrdersController : ControllerBase
     {
         private readonly IOrderService _orderService;
-        private readonly IDiscountService _discountService;
+        private readonly IOrderDiscountService _discountService;
         private IUserService _userService;
 
 
-        public OrdersController(IOrderService orderService, IDiscountService discountService, IUserService userService)
+        public OrdersController(IOrderService orderService, IOrderDiscountService discountService, IUserService userService)
         {
             _orderService = orderService;
             _discountService = discountService;
@@ -96,14 +96,18 @@ namespace TicketingSystem.Controllers
 
                 var user = await _userService.GetUserByEmailAsync(createOrderDto.Email);
                 if (user == null)
+                {
                     user = await _userService.CreateUserAsync(new Domain.Entity.User
                     {
                         FullName = createOrderDto.BillingFUllName,
                         Email = createOrderDto.Email,
                         Phone = createOrderDto.phone,
-                        Category = createOrderDto.Type,
+                        //Category = createOrderDto.Type,
+                        Ssn = createOrderDto.IdNumber
                     });
+
                     
+                }
 
                 var nameParts = createOrderDto.BillingFUllName.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
 
@@ -115,7 +119,7 @@ namespace TicketingSystem.Controllers
                     BillingFirstName = nameParts.Length > 0 ? nameParts[0] : string.Empty,
                     BillingLastName = nameParts.Length > 1 ? nameParts[1] : string.Empty,
 
-                    Country = createOrderDto.Country,
+                    //Country = createOrderDto.Country,
                     IdNumber = createOrderDto.IdNumber,
                     Status = OrderStatus.Pending,
                 };
@@ -146,6 +150,7 @@ namespace TicketingSystem.Controllers
 
                 order.OrderItems = orderItems;
                 order.TotalAmount = totalPrice;
+                order.FinalAmount = totalPrice;
 
                 var createdOrder = await _orderService.CreateOrderAsync(order);
                 var orderDto = MapToOrderDto(createdOrder!);
@@ -196,14 +201,14 @@ namespace TicketingSystem.Controllers
                 UserId = order.UserId,
                 UserName = order.User?.FullName ?? string.Empty,
                 Status = order.Status,
-                DiscountCode = order.DiscountCode,
+                //DiscountCode = order.OrderDiscountCode.Code??string.Empty, //expect error
                 TotalAmount = order.TotalAmount,
                 FinalAmount = order.FinalAmount,
                 CreatedAt = order.CreatedAt,
                 UpdatedAt = order.UpdatedAt,
                 BillingFUllName = $"{order.BillingFirstName} {order.BillingLastName}",
                 //BillingLastName = order.BillingLastName,
-                Country = order.Country,
+                //Country = order.Country,
                 IdNumber = order.IdNumber,
                 OrderItems = order.OrderItems?.Select(oi => new OrderItemDto
                 {

@@ -35,18 +35,18 @@ namespace TicketingSystem.Services
             //if ((ticket.OrderItem != null ? ticket.OrderItem.Order.Status : ticket.MemberShip.Status) != OrderStatus.Paid)
             //    throw new InvalidOperationException("Ticket must be from a paid order");
 
-            if(ticket.OrderItem != null)
-                if(ticket.OrderItem.Order.Status != OrderStatus.Paid)
+            if (ticket.OrderItem != null)
+                if (ticket.OrderItem.Order.Status != OrderStatus.Paid)
                     throw new ArgumentException("Ticket must be from a paid order");
-            if(ticket.MemberShip is not null)
-                    if (ticket.MemberShip.Status != OrderStatus.Paid)
-                        throw new ArgumentException("Ticket must be from a paid Memper");
+            if (ticket.MemberShip is not null)
+                if (ticket.MemberShip.Status != OrderStatus.Paid)
+                    throw new ArgumentException("Ticket must be from a paid Memper");
 
             if (ticket.ExpiryDate <= DateTime.UtcNow)
                 throw new InvalidOperationException("Ticket has expired");
 
             // Use provided event details or defaults
-            var finalEventName = eventName ??  "Event";
+            var finalEventName = eventName ?? "Event";
             var finalEventLocation = eventLocation ?? "Event Location";
             var finalEventDate = eventDate ?? ticket.PurchaseDate;
 
@@ -110,27 +110,27 @@ namespace TicketingSystem.Services
             // Generate tickets based on order items
             foreach (var orderItem in order.OrderItems)
             {
-                
-                    var ticketNumber = GenerateTicketNumber();
-                    var UserName = $"{order.BillingFirstName} {order.BillingLastName}";
-                    var UserNumber = GenerateOrderNumber(order.UserId);
 
-                    var qrCode = _qrCodeService.GenerateTicketQRCode(ticketNumber, orderId, UserName);
+                var ticketNumber = GenerateTicketNumber();
+                var UserName = $"{order.BillingFirstName} {order.BillingLastName}";
+                var UserNumber = GenerateOrderNumber(order.UserId);
 
-                    var ticket = new Ticket
-                    {
-                        OrderItemId = orderItem.Id,
-                        TicketNumber = ticketNumber,
-                        UserName = UserName,
-                        UserNumber = UserNumber,
-                        PurchaseDate = DateTime.UtcNow,
-                        ExpiryDate = DateTime.UtcNow.AddDays(30), // Default 30 days validity
-                        QRCode = qrCode,
-                        DeliveryMethod = TicketDelivery.Email
-                    };
+                var qrCode = _qrCodeService.GenerateTicketQRCode(ticketNumber, orderId, UserName);
 
-                    tickets.Add(ticket);
-                
+                var ticket = new Ticket
+                {
+                    OrderItemId = orderItem.Id,
+                    TicketNumber = ticketNumber,
+                    UserName = UserName,
+                    UserNumber = UserNumber,
+                    PurchaseDate = DateTime.UtcNow,
+                    ExpiryDate = DateTime.UtcNow.AddDays(30), // Default 30 days validity
+                    QRCode = qrCode,
+                    DeliveryMethod = TicketDelivery.Email
+                };
+
+                tickets.Add(ticket);
+
             }
             try
             {
@@ -152,19 +152,19 @@ namespace TicketingSystem.Services
                 .Include(t => t.OrderItem)
                     .ThenInclude(o => o.Order)
                     .ThenInclude(o => o.User)
-                    
-                    .Include(t=>t.MemberShip).ThenInclude(u=>u.User)
-                    //.ThenInclude(o=>o.Product)
-                    //.ThenInclude(o=>o.p)
+
+                    .Include(t => t.MemberShip).ThenInclude(u => u.User)
+                //.ThenInclude(o=>o.Product)
+                //.ThenInclude(o=>o.p)
                 .FirstOrDefaultAsync(t => t.TicketNumber == ticketNumber);
         }
 
         public async Task<IEnumerable<Ticket>> GetUserTicketsAsync(string Email)
         {
-             //var item = await _context.Orders
-             //   .Include(o=>o.OrderItems)
-             //   .ThenInclude(o=>o.Tickets)
-             //   .Where(o => o.UserId == userId).Select(o=>o.OrderItems.ti).ToListAsync();
+            //var item = await _context.Orders
+            //   .Include(o=>o.OrderItems)
+            //   .ThenInclude(o=>o.Tickets)
+            //   .Where(o => o.UserId == userId).Select(o=>o.OrderItems.ti).ToListAsync();
 
 
             //var item = await _context.OrderItems
@@ -205,23 +205,23 @@ namespace TicketingSystem.Services
                 .ToListAsync();
 
         }
-
-        public async Task<bool> SendTicketAsync(int ticketId, TicketDelivery deliveryMethod, string? Email = null)
+        public async Task<bool> SendTicketAsync(int ticketId, TicketDelivery deliveryMethod, string? email = null)
         {
             var ticket = await _context.Tickets
                 .Include(t => t.OrderItem)
                     .ThenInclude(o => o.Order)
                     .ThenInclude(o => o.User)
-                .Include(u=>u.MemberShip).ThenInclude(u=>u.User)
-
+                .Include(u => u.MemberShip).ThenInclude(u => u.User)
                 .FirstOrDefaultAsync(t => t.Id == ticketId);
 
-            if (ticket == null)
-                return false;
+            if (ticket == null) return false;
 
-            var user = ticket.OrderItem != null? ticket.OrderItem.Order.User:ticket.MemberShip?.User;
-            if (user == null)
-                return false;
+            var user = ticket.OrderItem?.Order.User ?? ticket.MemberShip?.User;
+            if (user == null) return false;
+
+            var isCouple = _context.MemberShips
+                .FirstOrDefault(t => t.Id == ticket.MemberShipId)?
+                .MembershipCard.ServiceCategory == ServiceCategory.Couples;
 
             bool success = false;
 
@@ -230,38 +230,16 @@ namespace TicketingSystem.Services
                 switch (deliveryMethod)
                 {
                     case TicketDelivery.Email:
-                        success = await _notificationService.SendTicketByEmailAsync(
-                            Email,
-                            ticket.TicketNumber,
-                            ticket.QRCode,
-                            ticket.MemberName,
-                            ticket.ExpiryDate);
+                        success = await SendEmailAsync(ticket, user.Phone, email, isCouple);
                         break;
 
                     case TicketDelivery.Whatsapp:
-                        success = await _notificationService.SendTicketByWhatsAppAsync(
-                            user.Phone,
-                            ticket.TicketNumber,
-                            ticket.QRCode,
-                            ticket.MemberName,
-                            ticket.ExpiryDate);
+                        success = await SendWhatsAppAsync(ticket, user.Phone);
                         break;
 
                     case TicketDelivery.Both:
-                        var emailSuccess = await _notificationService.SendTicketByEmailAsync(
-                            user.Email,
-                            ticket.TicketNumber,
-                            ticket.QRCode,
-                            ticket.MemberName,
-                            ticket.ExpiryDate);
-
-                        var whatsappSuccess = await _notificationService.SendTicketByWhatsAppAsync(
-                            user.Phone,
-                            ticket.TicketNumber,
-                            ticket.QRCode,
-                            ticket.MemberName,
-                            ticket.ExpiryDate);
-
+                        var emailSuccess = await SendEmailAsync(ticket, user.Phone, email, isCouple);
+                        var whatsappSuccess = await SendWhatsAppAsync(ticket, user.Phone);
                         success = emailSuccess || whatsappSuccess;
                         break;
 
@@ -279,10 +257,48 @@ namespace TicketingSystem.Services
 
                 return success;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                // TODO: log ex (Serilog/NLog/etc.)
                 return false;
             }
+        }
+
+        private async Task<bool> SendEmailAsync(Ticket ticket, string phone, string? email, bool isCouple)
+        {
+            if (isCouple)
+            {
+                return await _notificationService.SendCoupleTicketByEmailAsync(
+                    email,
+                    ticket.TicketNumber,
+                    ticket.QRCode,
+                    ticket.MemberShip is not null? ticket.MemberName:ticket.UserName,
+                    ticket.MemberShip?.BookingDate ?? ticket.OrderItem.BookingDate,
+                    ticket.ExpiryDate,
+                    phone,
+                    ticket.MemberShip?.PartnerName);
+            }
+            else
+            {
+                return await _notificationService.SendSingleTicketByEmailAsync(
+                    email,
+                    ticket.TicketNumber,
+                    ticket.QRCode,
+                    ticket.MemberShip is not null ? ticket.MemberName : ticket.UserName,
+                    ticket.MemberShip?.BookingDate ?? ticket.OrderItem.BookingDate,
+                    ticket.ExpiryDate,
+                    phone);
+            }
+        }
+
+        private async Task<bool> SendWhatsAppAsync(Ticket ticket, string phone)
+        {
+            return await _notificationService.SendTicketByWhatsAppAsync(
+                phone,
+                ticket.TicketNumber,
+                ticket.QRCode,
+                ticket.MemberName,
+                ticket.ExpiryDate);
         }
 
         public async Task<bool> ValidateTicketAsync(string ticketNumber)
@@ -375,7 +391,8 @@ namespace TicketingSystem.Services
                 PurchaseDate = DateTime.UtcNow,
                 ExpiryDate = DateTime.UtcNow.AddDays(30), // Default 30 days validity
                 QRCode = qrCode,
-                DeliveryMethod = TicketDelivery.Email
+                DeliveryMethod = TicketDelivery.Email,
+                //UserName
             };
             await _context.Tickets.AddAsync(item);
 

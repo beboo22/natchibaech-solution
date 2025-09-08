@@ -14,7 +14,7 @@ namespace TicketingSystem.Controllers
         //private readonly IProductService _productService;
         private readonly IMembershipService _membershipService;
         private readonly ITicketService _ticketService;
-        private readonly IDiscountService _discountService;
+        private readonly IOrderDiscountService _discountService;
 
         public AdminController(
             IUserService userService,
@@ -22,7 +22,7 @@ namespace TicketingSystem.Controllers
             //IProductService productService,
             IMembershipService membershipService,
             ITicketService ticketService,
-            IDiscountService discountService)
+            IOrderDiscountService discountService)
         {
             _userService = userService;
             _orderService = orderService;
@@ -59,7 +59,7 @@ namespace TicketingSystem.Controllers
                     .GroupBy(o => o.Status)
                     .ToDictionary(g => g.Key.ToString(), g => g.Count());
 
-                return Ok(new ApiResponse<object>(200, new
+                var res = new ApiResponse<object>(200, new
                 {
                     Overview = new
                     {
@@ -92,7 +92,9 @@ namespace TicketingSystem.Controllers
                         ExpiredDiscountCodes = discountCodes.Count(dc => dc.ExpiryDate <= DateTime.UtcNow),
                         FullyUsedDiscountCodes = discountCodes.Count(dc => dc.CurrentUsage >= dc.MaxUsage)
                     }
-                }));
+                });
+                Console.WriteLine(res);
+                return Ok(res);
             }
             catch (Exception ex)
             {

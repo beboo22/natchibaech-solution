@@ -21,13 +21,14 @@ namespace Travel_site.Controllers
         ApplicationDbContext _context;
         private readonly IQRCodeService _qrCodeService;
         private IMembershipService _membershipService;
+        private INotificationService _notificationService;
 
-
-        public MembershipReviewRequestController(ApplicationDbContext context, IQRCodeService qrCodeService, IMembershipService membershipService)
+        public MembershipReviewRequestController(ApplicationDbContext context, IQRCodeService qrCodeService, IMembershipService membershipService, INotificationService notificationService)
         {
             _context = context;
             _qrCodeService = qrCodeService;
             _membershipService = membershipService;
+            _notificationService = notificationService;
         }
 
         [HttpGet]
@@ -35,18 +36,19 @@ namespace Travel_site.Controllers
         {
             return Ok( new ApiResponse<List<MembershipReviewRequestDtos>>(200, await _context.MembershipReviewRequests.Select(_context => new MembershipReviewRequestDtos
             {
+                Id= _context.Id,
                 UserId = _context.UserId,
                 RequestedAt = _context.RequestedAt,
                 Status = _context.Status,
             }).ToListAsync()));
         }
 
-        [HttpPut("/{id:int}")]
-        public async Task<IActionResult> UpdateStatus(int id,[FromBody] ReviewStatus status)
+        [HttpPut("/{MembershipReviewRequestid:int}")]
+        public async Task<IActionResult> UpdateStatus(int MembershipReviewRequestid, [FromBody] ReviewStatus status)
         {
             var item = await _context.MembershipReviewRequests
                 .Include(m => m.User)
-                .FirstOrDefaultAsync(m => m.Id == id);
+                .FirstOrDefaultAsync(m => m.Id == MembershipReviewRequestid);
             if (item is null)
                 return NotFound(new ApiResponse(404, "There's no MembershipReviewRequest by this id"));
             try
@@ -59,9 +61,13 @@ namespace Travel_site.Controllers
                     var existingCard = await _context.MembershipCards
                 .FirstOrDefaultAsync(mc => mc.Id == item.MembershipCardId);
 
-                    var membership = await _membershipService.CompleteMembershipIssuanceAsync(id);
+                    var membership = await _membershipService.CompleteMembershipIssuanceAsync(MembershipReviewRequestid);
 
                     await _context.MemberShips.AddAsync(membership);
+                }
+                else if(status == ReviewStatus.Rejected)
+                {
+                    await _notificationService.SendRejectedEmail(item.UserEmail,item.User.FullName);
                 }
             }
             catch (Exception ex)

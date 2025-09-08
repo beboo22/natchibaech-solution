@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250828152111_EstablishmentDB")]
-    partial class EstablishmentDB
+    [Migration("20250905134915_EtaplishmentDB")]
+    partial class EtaplishmentDB
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,7 +25,78 @@ namespace Infrastructure.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Domain.Entity.DiscountCode", b =>
+            modelBuilder.Entity("Domain.Entity.MemberShip", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool?>("ApplyDiscount")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("BookingDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("DiscountAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("Expiry")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("MemberShipDiscountCodeId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MembershipCardId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MembershipNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PartnerEmail")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PartnerName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PartnerPhone")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PartnerSsn")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("QrCode")
+                        .IsRequired()
+                        .HasColumnType("NVARCHAR(MAX)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserEmail")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MemberShipDiscountCodeId");
+
+                    b.HasIndex("MembershipCardId");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("MemberShips");
+                });
+
+            modelBuilder.Entity("Domain.Entity.MemberShipDiscountCode", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -50,17 +121,7 @@ namespace Infrastructure.Data.Migrations
                     b.Property<int>("MaxUsage")
                         .HasColumnType("int");
 
-                    b.Property<int?>("MemberShipId")
-                        .HasColumnType("int");
-
                     b.Property<int>("Percentage")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UserEmail")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("UserId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -68,59 +129,7 @@ namespace Infrastructure.Data.Migrations
                     b.HasIndex("Code")
                         .IsUnique();
 
-                    b.HasIndex("MemberShipId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("DiscountCodes");
-                });
-
-            modelBuilder.Entity("Domain.Entity.MemberShip", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("BookingDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("Expiry")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("MembershipCardId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("MembershipNumber")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("QrCode")
-                        .IsRequired()
-                        .HasColumnType("NVARCHAR(MAX)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UserEmail")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MembershipCardId");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("MemberShips");
+                    b.ToTable("MemberShipDiscountCodes");
                 });
 
             modelBuilder.Entity("Domain.Entity.MembershipCard", b =>
@@ -136,6 +145,9 @@ namespace Infrastructure.Data.Migrations
 
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("ServiceCategory")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -196,16 +208,8 @@ namespace Infrastructure.Data.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<string>("Country")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
-
-                    b.Property<int?>("DiscountCode")
-                        .HasColumnType("int");
 
                     b.Property<decimal>("FinalAmount")
                         .HasColumnType("decimal(18,2)");
@@ -214,6 +218,9 @@ namespace Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("OrderDiscountCodeId")
+                        .HasColumnType("int");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -233,9 +240,47 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("OrderDiscountCodeId");
+
                     b.HasIndex("UserId");
 
                     b.ToTable("Orders");
+                });
+
+            modelBuilder.Entity("Domain.Entity.OrderDiscountCode", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("CurrentUsage")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ExpiryDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("MaxUsage")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Percentage")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("OrderDiscountCodes");
                 });
 
             modelBuilder.Entity("Domain.Entity.OrderItem", b =>
@@ -383,9 +428,6 @@ namespace Infrastructure.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("Category")
-                        .HasColumnType("int");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -419,24 +461,13 @@ namespace Infrastructure.Data.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("Domain.Entity.DiscountCode", b =>
-                {
-                    b.HasOne("Domain.Entity.MemberShip", "MemberShip")
-                        .WithMany("DiscountCodes")
-                        .HasForeignKey("MemberShipId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("Domain.Entity.User", "User")
-                        .WithMany("DiscountCodes")
-                        .HasForeignKey("UserId");
-
-                    b.Navigation("MemberShip");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("Domain.Entity.MemberShip", b =>
                 {
+                    b.HasOne("Domain.Entity.MemberShipDiscountCode", "MemberShipDiscountCode")
+                        .WithMany("MemberShip")
+                        .HasForeignKey("MemberShipDiscountCodeId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("Domain.Entity.MembershipCard", "MembershipCard")
                         .WithMany("MemberShips")
                         .HasForeignKey("MembershipCardId")
@@ -448,6 +479,8 @@ namespace Infrastructure.Data.Migrations
                         .HasForeignKey("Domain.Entity.MemberShip", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("MemberShipDiscountCode");
 
                     b.Navigation("MembershipCard");
 
@@ -475,11 +508,18 @@ namespace Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Domain.Entity.Order", b =>
                 {
+                    b.HasOne("Domain.Entity.OrderDiscountCode", "OrderDiscountCode")
+                        .WithMany("Orders")
+                        .HasForeignKey("OrderDiscountCodeId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("Domain.Entity.User", "User")
                         .WithMany("Orders")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("OrderDiscountCode");
 
                     b.Navigation("User");
                 });
@@ -529,9 +569,12 @@ namespace Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Domain.Entity.MemberShip", b =>
                 {
-                    b.Navigation("DiscountCodes");
-
                     b.Navigation("Transactions");
+                });
+
+            modelBuilder.Entity("Domain.Entity.MemberShipDiscountCode", b =>
+                {
+                    b.Navigation("MemberShip");
                 });
 
             modelBuilder.Entity("Domain.Entity.MembershipCard", b =>
@@ -546,6 +589,11 @@ namespace Infrastructure.Data.Migrations
                     b.Navigation("Transactions");
                 });
 
+            modelBuilder.Entity("Domain.Entity.OrderDiscountCode", b =>
+                {
+                    b.Navigation("Orders");
+                });
+
             modelBuilder.Entity("Domain.Entity.OrderItem", b =>
                 {
                     b.Navigation("Tickets")
@@ -554,8 +602,6 @@ namespace Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Domain.Entity.User", b =>
                 {
-                    b.Navigation("DiscountCodes");
-
                     b.Navigation("Membership");
 
                     b.Navigation("Orders");

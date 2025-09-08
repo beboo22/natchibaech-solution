@@ -20,23 +20,53 @@ namespace TicketingSystem.Services
 
         public async Task<MemberShip> IssueMembershipAsync(IssueMembershipCardDto issue)
         {
-            var user = await _context.Users.Where(u => u.Email == issue.userEmail).FirstOrDefaultAsync();
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Email == issue.userEmail);
+
+            var card = await _context.MembershipCards
+                .FirstOrDefaultAsync(c => c.Id == issue.MembershipCardId);
+            if(await _context.MemberShips.AnyAsync(u=>u.User.Email == issue.userEmail))
+                throw new Exception("There's Membership Already exist");
+
+
+
+
+
+            if (card == null)
+                throw new InvalidOperationException("No MembershipCard found with the provided Id.");
+
+            if (card.ServiceCategory == ServiceCategory.Couples &&
+                (string.IsNullOrEmpty(issue.PartnerEmail) ||
+                string.IsNullOrEmpty(issue.PartnerEmail) ||
+                string.IsNullOrEmpty(issue.PartnerPhone)))
+                throw new InvalidOperationException("Should add Partner data");
 
             if (user == null)
-                user = new Domain.Entity.User
+            {
+                user = new User
                 {
                     FullName = issue.Fullname,
                     Email = issue.userEmail,
                     Phone = issue.phone,
-                    Category = issue.type,
+                    Ssn = issue.Ssn,
                 };
-            await _context.Users.AddAsync(user);
 
-            await _context.SaveChangesAsync();
+                await _context.Users.AddAsync(user);
+                await _context.SaveChangesAsync();
+            }
 
-            if (user.Category == UserType.male)
+            // Handle user-category vs card-category restrictions using switch
+            if (card.ServiceCategory == ServiceCategory.Men)
             {
-                // should admin review this?
+                //need to ckeack existance
+
+               //var Existuser = await _context.MembershipReviewRequests.FirstOrDefaultAsync(m => m.UserEmail == user.Email&& m.Status == ReviewStatus.Approved);
+               // if (Existuser is not null)
+               // {
+               //     throw new Exception("There's Membership Already exist");
+               // }
+
+
                 var reviewRequest = new MembershipReviewRequest
                 {
                     UserId = user.Id,
@@ -45,31 +75,26 @@ namespace TicketingSystem.Services
                     RequestedAt = DateTime.UtcNow,
                     Status = ReviewStatus.Pending
                 };
-                try
-                {
-                    _context.MembershipReviewRequests.Add(reviewRequest);
-                    await _context.SaveChangesAsync();
-
-                }
-                catch
-                {
-                    Console.WriteLine();
-                }
-                throw new InvalidOperationException("Membership issuance for this category requires admin review.");
+                _context.MembershipReviewRequests.Add(reviewRequest);
+                await _context.SaveChangesAsync();
+                throw new InvalidOperationException("Thank you for registering for Natchi Beach Membership \nYour request is under review, and we will get back to you soon. We’re happy to have you with us!");
             }
 
-            // Check if user already has an active membership card
+            // Ensure user doesn't already have this membership card
             var existingCard = await _context.MembershipCards
                 .FirstOrDefaultAsync(mc => mc.Id == issue.MembershipCardId);
 
             if (existingCard == null)
-            {
-                throw new InvalidOperationException("membership card Not found");
-
-            }
+                throw new InvalidOperationException("Membership card not found.");
 
             var membershipNumber = GenerateMembershipNumber(user.Id);
-            var qrCodeData = GenerateMembershipQRData(membershipNumber, user.FullName, user.Category, DateTime.UtcNow.AddYears(1));
+            var qrCodeData = GenerateMembershipQRData(
+                membershipNumber,
+                user.FullName,
+                user.Ssn,
+                DateTime.UtcNow.AddYears(1)
+            );
+
             var qrCode = _qrCodeService.GenerateQRCode(qrCodeData);
 
 
@@ -80,28 +105,30 @@ namespace TicketingSystem.Services
                 UserEmail = issue.userEmail,
                 MembershipNumber = membershipNumber,
                 BookingDate = DateTime.UtcNow,
-                Expiry = DateTime.UtcNow.AddYears(1), // Default 1 year validity
+                Expiry = DateTime.UtcNow.AddYears(1),
                 QrCode = qrCode,
                 Status = OrderStatus.Pending,
             };
-            try
-            {
-                _context.MemberShips.Add(membership);
-                await _context.SaveChangesAsync();
-                membership.MembershipCard = existingCard;
-                membership.User = user;
 
-            }
-            catch (Exception ex)
+            if (card.ServiceCategory == ServiceCategory.Couples)
             {
-                throw new Exception("error while add", ex.InnerException);
+                membership.PartnerPhone = issue.PartnerPhone;
+                membership.PartnerName = issue.PartnerName;
+                membership.PartnerEmail = issue.PartnerEmail;
+                membership.PartnerSsn = issue.PartnerSsn;
             }
+            _context.MemberShips.Add(membership);
+            await _context.SaveChangesAsync();
 
-            // Send membership card via email
-            await SendMembershipCardAsync(membership);
+            membership.MembershipCard = existingCard;
+            membership.User = user;
+
+            // Send email
+            //await SendMembershipCardAsync(membership);
 
             return membership;
         }
+
 
         //method to complete the men memberShip after review
         public async Task<MemberShip> CompleteMembershipIssuanceAsync(int reviewRequestId)
@@ -132,7 +159,7 @@ namespace TicketingSystem.Services
             string qrCode;
             try
             {
-                var qrCodeData = GenerateMembershipQRData(membershipNumber, user.FullName, user.Category, DateTime.UtcNow.AddYears(1));
+                var qrCodeData = GenerateMembershipQRData(membershipNumber, user.FullName, user.Ssn, DateTime.UtcNow.AddYears(1));
                 qrCode = _qrCodeService.GenerateQRCode(qrCodeData);
             }
             catch (Exception ex)
@@ -159,17 +186,7 @@ namespace TicketingSystem.Services
                 {
                     _context.MemberShips.Add(membershipCard);
                     await _context.SaveChangesAsync();
-
-                    //// Send membership card email
-                    //var emailSent = _notificationService.SendTicketByEmailAsync(
-                    //    user.Email,
-                    //    membershipCard.MembershipNumber,
-                    //    membershipCard.QrCode,
-                    //    user.FullName,
-                    //    membershipCard.Expiry
-                    //);
-
-                    await SendMembershipCardAsync(membershipCard);
+                    await _notificationService.SendApprovedEmail(reviewRequest.UserEmail,user.FullName);
 
 
                     await transaction.CommitAsync();
@@ -198,7 +215,7 @@ namespace TicketingSystem.Services
         {
             return await _context.MemberShips
                 .Include(mc => mc.User)
-                .Include(mc => mc.DiscountCodes)
+                .Include(mc => mc.MemberShipDiscountCode)
                 .OrderByDescending(mc => mc.BookingDate)
                 .ToListAsync();
         }
@@ -207,7 +224,7 @@ namespace TicketingSystem.Services
         {
             return await _context.MemberShips
                 .Include(mc => mc.User)
-                .Include(mc => mc.DiscountCodes)
+                .Include(mc => mc.MemberShipDiscountCode)
                 .Where(mc => mc.Expiry > DateTime.UtcNow)
                 .OrderByDescending(mc => mc.BookingDate)
                 .ToListAsync();
@@ -235,14 +252,14 @@ namespace TicketingSystem.Services
 
 
             membershipCard.Status = item;
-            var qrCodeData = GenerateMembershipQRData(membershipCard.MembershipNumber, membershipCard.User.FullName, membershipCard.User.Category, membershipCard.Expiry);
+            var qrCodeData = GenerateMembershipQRData(membershipCard.MembershipNumber, membershipCard.User.FullName, membershipCard.User.Ssn, membershipCard.Expiry);
             var qrCode = _qrCodeService.GenerateQRCode(qrCodeData);
             membershipCard.QrCode = qrCode;
             membershipCard.IsActive = true;
             try
             {
                 await _context.SaveChangesAsync();
-                await SendMembershipCardAsync(membershipCard);
+                //await SendMembershipCardAsync(membershipCard);
             }
             catch (Exception ex)
             {
@@ -263,14 +280,14 @@ namespace TicketingSystem.Services
             membershipCard.Expiry = item.Expiry;
             membershipCard.IsActive = item.IsActive.HasValue ? item.IsActive.Value : membershipCard.IsActive;
             membershipCard.Status = item.Status;
-            var qrCodeData = GenerateMembershipQRData(membershipCard.MembershipNumber, membershipCard.User.FullName, membershipCard.User.Category, membershipCard.Expiry);
+            var qrCodeData = GenerateMembershipQRData(membershipCard.MembershipNumber, membershipCard.User.FullName, membershipCard.User.Ssn, membershipCard.Expiry);
             var qrCode = _qrCodeService.GenerateQRCode(qrCodeData);
             membershipCard.QrCode = qrCode;
             //membershipCard.pr
             try
             {
                 await _context.SaveChangesAsync();
-                await SendMembershipCardAsync(membershipCard);
+                //await SendMembershipCardAsync(membershipCard);
             }
             catch (Exception ex)
             {
@@ -281,13 +298,13 @@ namespace TicketingSystem.Services
 
         public async Task<bool> RenewMembershipAsync(string Email, int months = 12)
         {
-            var membershipCard = await _context.MemberShips.Include(u => u.User)
+            var membershipCard = await _context.MemberShips.Include(u => u.User).Include(u => u.MembershipCard)
                 .FirstOrDefaultAsync(mc => mc.User.Email == Email);
 
             if (membershipCard == null)
                 return false;
             //get user
-            if (membershipCard.User.Category == UserType.male)
+            if (membershipCard.MembershipCard.ServiceCategory == ServiceCategory.Men)
             {
                 // should admin review this?
                 var reviewRequest = new MembershipReviewRequest
@@ -296,6 +313,7 @@ namespace TicketingSystem.Services
                     RequestedAt = DateTime.UtcNow,
                     Status = ReviewStatus.Pending
                 };
+                membershipCard.Status = OrderStatus.Pending;
                 _context.MembershipReviewRequests.Add(reviewRequest);
                 await _context.SaveChangesAsync();
                 throw new InvalidOperationException("Membership card issuance for this category requires admin review.");
@@ -310,14 +328,14 @@ namespace TicketingSystem.Services
             membershipCard.IsActive = false;
             membershipCard.Status = OrderStatus.Pending;
             membershipCard.MembershipNumber = GenerateMembershipNumber(membershipCard.User.Id);
-            var qrCodeData = GenerateMembershipQRData(membershipCard.MembershipNumber, membershipCard.User.FullName, membershipCard.User.Category, membershipCard.Expiry);
+            var qrCodeData = GenerateMembershipQRData(membershipCard.MembershipNumber, membershipCard.User.FullName, membershipCard.User.Ssn, membershipCard.Expiry);
             var qrCode = _qrCodeService.GenerateQRCode(qrCodeData);
             membershipCard.QrCode = qrCode;
 
             await _context.SaveChangesAsync();
 
             // Send renewal notification
-            await SendMembershipCardAsync(membershipCard);
+            //await SendMembershipCardAsync(membershipCard);
 
             return true;
         }
@@ -335,14 +353,21 @@ namespace TicketingSystem.Services
 
         public async Task<bool> RevokeMembershipAsync(string Email)
         {
-            var membershipCard = await _context.MemberShips
+            var membershipCard = await _context.MemberShips.Include(m=>m.Transactions)
                 .FirstOrDefaultAsync(mc => mc.User.Email == Email);
 
             if (membershipCard == null)
                 return false;
 
             _context.MemberShips.Remove(membershipCard);
+            try
+            {
             await _context.SaveChangesAsync();
+
+            }catch(Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
             return true;
         }
         public async Task<MembershipStatsDto> GetMembershipStatsAsync()
@@ -358,7 +383,7 @@ namespace TicketingSystem.Services
 
             var membersByCategory = await _context.MemberShips
                 .Where(mc => mc.Expiry > now)
-                .GroupBy(mc => mc.User.Category)
+                .GroupBy(mc => mc.MembershipCard.ServiceCategory)
                 .Select(g => new { g.Key, Count = g.Count() })
                 .ToDictionaryAsync(g => g.Key, g => g.Count);
 
@@ -388,26 +413,29 @@ namespace TicketingSystem.Services
                 ExpiredPercentage = total == 0 ? 0 : Math.Round((double)expired / total * 100, 2)
             };
         }
-        private async Task SendMembershipCardAsync(MemberShip membershipCard)
-        {
-            try
-            {
-                var user = await _context.Users.FindAsync(membershipCard.UserId);
-                if (user == null) return;
+        //private async Task SendMembershipCardAsync(MemberShip membershipCard)
+        //{
+        //    try
+        //    {
+        //        var user = await _context.Users.FindAsync(membershipCard.UserId);
+        //        if (user == null) return;
 
-                var membershipNumber = GenerateMembershipNumber(membershipCard.UserId);
+        //        var membershipNumber = GenerateMembershipNumber(membershipCard.UserId);
 
-                // This would integrate with your email service
-                // For now, we'll just log it
-                await _notificationService.SendTicketByEmailAsync(
-                    user.Email, membershipNumber, membershipCard.QrCode, user.FullName, membershipCard.Expiry);
-            }
-            catch (Exception)
-            {
-                // Log error but don't fail the membership card creation
-                throw;
-            }
-        }
+        //        // This would integrate with your email service
+        //        // For now, we'll just log it
+        //        if(membershipCard.MembershipCard.ServiceCategory == ServiceCategory.Couples)
+        //            await _notificationService.SendCoupleTicketByEmailAsync(user.Email, )
+
+        //        await _notificationService.SendTicketByEmailAsync(
+        //            user.Email, membershipNumber, membershipCard.QrCode, user.FullName, membershipCard.Expiry);
+        //    }
+        //    catch (Exception)
+        //    {
+        //        // Log error but don't fail the membership card creation
+        //        throw;
+        //    }
+        //}
 
 
 
@@ -416,7 +444,7 @@ namespace TicketingSystem.Services
             return $"MEM{userId:D6}{DateTime.UtcNow.Year}";
         }
 
-        private static string GenerateMembershipQRData(string membershipNumber, string memberName, UserType category, DateTime time)
+        private static string GenerateMembershipQRData(string membershipNumber, string memberName, string category, DateTime time)
         {
             return $"MEMBERSHIP:{membershipNumber}|NAME:{memberName}|CATEGORY:{category}|ISSUED:{DateTime.UtcNow:yyyy-MM-dd}|Expiry Data :{time:yyyy-MM-dd}";
         }

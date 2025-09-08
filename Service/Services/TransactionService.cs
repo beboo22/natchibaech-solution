@@ -100,7 +100,8 @@ namespace TicketingSystem.Services
                 Amount = order.MembershipCard.Price,
                 Status = TransactionStatus.Pending,
                 TransactionDate = DateTime.UtcNow,
-                TransactionReference = GenerateTransactionReference()
+                TransactionReference = GenerateTransactionReference(),
+                
             };
 
             _context.Transactions.Add(transaction);

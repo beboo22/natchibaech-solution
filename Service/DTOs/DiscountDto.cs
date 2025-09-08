@@ -5,7 +5,7 @@ namespace Travelsite.DTOs
     public class DiscountCodeDto
     {
         public int Id { get; set; }
-        public int? UserId { get; set; }
+        //public int? UserId { get; set; }
         public string Code { get; set; } = string.Empty;
         public int Percentage { get; set; }
         public int MaxUsage { get; set; }
@@ -17,8 +17,8 @@ namespace Travelsite.DTOs
 
     public class CreateDiscountCodeDto
     {
-        public int? UserId { get; set; }
-        public int? MemberId { get; set; }
+        //public int? UserId { get; set; }
+        //public int? MemberId { get; set; }
         
         [Required]
         [MaxLength(50)]
@@ -38,7 +38,7 @@ namespace Travelsite.DTOs
         public bool IsActive { get; set; }
     }
 
-    public class ApplyDiscountDto
+    public class ApplyOrderDiscountDto
     {
         [Required]
         [MaxLength(50)]
@@ -48,7 +48,18 @@ namespace Travelsite.DTOs
         [Range(0.01, double.MaxValue, ErrorMessage = "Amount must be greater than 0")]
         public decimal Amount { get; set; }
         
-        public int OrderId { get; set; }
+        public int? OrderId { get; set; }
+    }
+    public class ApplyMemberDiscountDto
+    {
+        [Required]
+        [MaxLength(50)]
+        public string Code { get; set; } = string.Empty;
+        
+        [Required]
+        [Range(0.01, double.MaxValue, ErrorMessage = "Amount must be greater than 0")]
+        public decimal Amount { get; set; }
+        public int? MemberShipId { get; set; }
     }
 
     public class DiscountResultDto

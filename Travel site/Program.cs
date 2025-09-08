@@ -1,5 +1,7 @@
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Service.Services;
+using System.Text.Json.Serialization;
 using TicketingSystem.Services;
 using Travelsite.Middleware;
 
@@ -18,6 +20,10 @@ namespace Travelsite
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+            builder.Services.AddControllers().AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+            });
 
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -33,7 +39,7 @@ namespace Travelsite
             builder.Services.AddScoped<IUserService, UserService>();
             //builder.Services.AddScoped<IProductService, ProductService>();
             builder.Services.AddScoped<IOrderService, OrderService>();
-            builder.Services.AddScoped<IDiscountService, DiscountService>();
+            builder.Services.AddScoped<IOrderDiscountService, OrderDiscountService>();
             builder.Services.AddScoped<ITransactionService, TransactionService>();
             builder.Services.AddScoped<ITicketService, TicketService>();
             builder.Services.AddScoped<IMembershipService, MembershipService>();
@@ -41,6 +47,7 @@ namespace Travelsite
             builder.Services.AddScoped<INotificationService, NotificationService>();
             builder.Services.AddScoped<IGoogleWalletService, GoogleWalletService>();
             builder.Services.AddScoped<IAppleWalletService, AppleWalletService>();
+            builder.Services.AddScoped<IMemberShipDiscountService, MemberShipDiscountService>();
 
             builder.Services.AddCors(options =>
             {

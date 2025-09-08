@@ -13,10 +13,10 @@ namespace TicketingSystem.Controllers
     public class MembershipCardsController : ControllerBase
     {
         private readonly IMembershipService _membershipService;
-        private readonly IDiscountService _discountService;
+        private readonly IOrderDiscountService _discountService;
         private ApplicationDbContext _context;
 
-        public MembershipCardsController(IMembershipService membershipService, IDiscountService discountService, ApplicationDbContext context)
+        public MembershipCardsController(IMembershipService membershipService, IOrderDiscountService discountService, ApplicationDbContext context)
         {
             _membershipService = membershipService;
             _discountService = discountService;
@@ -30,6 +30,7 @@ namespace TicketingSystem.Controllers
             {
                 await _context.MembershipCards.AddAsync(new MembershipCard
                 {
+                    ServiceCategory = entity.ServiceCategory,
                     IsActive = entity.IsActive,
                     Price = entity.Price,
                 });
@@ -45,7 +46,7 @@ namespace TicketingSystem.Controllers
 
         }
         [HttpGet("MembershipCard")]
-        public async Task<IActionResult> GetMembershipCard()
+        public async Task<ActionResult<ApiResponse<IEnumerable<MembershipCard>>>> GetMembershipCard()
         {
             try
             {
@@ -101,13 +102,13 @@ namespace TicketingSystem.Controllers
         }
 
         [HttpDelete("DeleteMembershipCard/{id}")]
-        public async Task<IActionResult> DeleteMembershipCard(int id )
+        public async Task<IActionResult> DeleteMembershipCard(int id)
         {
             try
             {
-                var item  = _context.MembershipCards.Find(id);
+                var item = _context.MembershipCards.Find(id);
                 if (item == null)
-                    return BadRequest(new ApiResponse((int)HttpStatusCode.BadRequest,"there's no Membershipcard"));
+                    return BadRequest(new ApiResponse((int)HttpStatusCode.BadRequest, "there's no Membershipcard"));
 
                 _context.MembershipCards.Remove(item);
                 await _context.SaveChangesAsync();
@@ -136,7 +137,7 @@ namespace TicketingSystem.Controllers
 
 
 
-                var membershipCardDto = await MapToMembershipCardDtoAsync(membershipCard);
+                var membershipCardDto =  MapToMembershipCardDtoAsync(membershipCard);
                 return Ok(new ApiResponse<MembershipDto>(200, membershipCardDto));
             }
             catch (ArgumentException ex)
@@ -165,7 +166,7 @@ namespace TicketingSystem.Controllers
                 if (membershipCard == null)
                     return NotFound(new { message = "Membership card not found" });
 
-                var membershipCardDto = await MapToMembershipCardDtoAsync(membershipCard);
+                var membershipCardDto = MapToMembershipCardDtoAsync(membershipCard);
                 return Ok(new ApiResponse<MembershipDto>(200, membershipCardDto));
             }
             catch (Exception ex)
@@ -178,7 +179,7 @@ namespace TicketingSystem.Controllers
         /// Get all membership cards (Admin only)
         /// </summary>
         [HttpGet]
-        public async Task<ActionResult> GetAllMembershipCards([FromQuery] bool activeOnly = false)
+        public async Task<ActionResult<List<MembershipDto>>> GetAllMembershipCards([FromQuery] bool activeOnly = false)
         {
             try
             {
@@ -189,10 +190,14 @@ namespace TicketingSystem.Controllers
                 var membershipCardDtos = new List<MembershipDto>();
                 foreach (var card in membershipCards)
                 {
-                    membershipCardDtos.Add(await MapToMembershipCardDtoAsync(card));
+                    membershipCardDtos.Add(MapToMembershipCardDtoAsync(card));
                 }
+    //            var membershipCardDtos = await Task.WhenAll(
+    //membershipCards.Select(m => MapToMembershipCardDtoAsync(m))
+//);
 
-                return Ok(new ApiResponse<List<MembershipDto>>(200, membershipCardDtos));
+                return Ok(new ApiResponse<List<MembershipDto>>(200, membershipCardDtos.ToList()));
+
             }
             catch (Exception ex)
             {
@@ -213,7 +218,7 @@ namespace TicketingSystem.Controllers
                 var membershipCardDtos = new List<MembershipDto>();
                 foreach (var card in membershipCards)
                 {
-                    membershipCardDtos.Add(await MapToMembershipCardDtoAsync(card));
+                    membershipCardDtos.Add(MapToMembershipCardDtoAsync(card));
                 }
                 return Ok(new ApiResponse<List<MembershipDto>>(200, membershipCardDtos));
             }
@@ -240,7 +245,7 @@ namespace TicketingSystem.Controllers
                 if (membershipCard == null)
                     return NotFound(new { message = "Membership card not found" });
 
-                var membershipCardDto = await MapToMembershipCardDtoAsync(membershipCard);
+                var membershipCardDto = MapToMembershipCardDtoAsync(membershipCard);
                 return Ok(new ApiResponse<MembershipDto>(200, membershipCardDto));
             }
             catch (Exception ex)
@@ -307,14 +312,14 @@ namespace TicketingSystem.Controllers
         /// <summary>
         /// Revoke membership card (Admin only)
         /// </summary>
-        [HttpDelete("{userId}")]
+        [HttpDelete("{Email}")]
         public async Task<ActionResult> RevokeMembershipCard(string Email)
         {
             try
             {
                 var success = await _membershipService.RevokeMembershipAsync(Email);
                 if (!success)
-                    return NotFound(new { message = "Membership card not found" });
+                    return NotFound(new { message = "Membership  not found" });
 
                 return Ok(new { message = "Membership card revoked successfully" });
             }
@@ -333,7 +338,7 @@ namespace TicketingSystem.Controllers
             try
             {
                 var stats = await _membershipService.GetMembershipStatsAsync();
-                return Ok(new ApiResponse<MembershipStatsDto>(200,stats));
+                return Ok(new ApiResponse<MembershipStatsDto>(200, stats));
             }
             catch (Exception ex)
             {
@@ -341,25 +346,20 @@ namespace TicketingSystem.Controllers
             }
         }
 
-        private async Task<MembershipDto> MapToMembershipCardDtoAsync(MemberShip membershipCard)
+        private MembershipDto MapToMembershipCardDtoAsync(MemberShip membershipCard)
         {
-            // Get available discount codes for this membership card
-            var discountCodes = await _discountService.GetAllDiscountCodesAsync();
-            var availableDiscounts = discountCodes
-                .Where(dc => dc.UserId == membershipCard.UserId || dc.UserId == null)
-                .Where(dc => dc.ExpiryDate > DateTime.UtcNow && dc.CurrentUsage < dc.MaxUsage)
-                .Select(dc => new DiscountCodeDto
-                {
-                    Id = dc.Id,
-                    Code = dc.Code,
-                    Percentage = dc.Percentage,
-                    MaxUsage = dc.MaxUsage,
-                    CurrentUsage = dc.CurrentUsage,
-                    ExpiryDate = dc.ExpiryDate,
-                    IsActive = dc.ExpiryDate > DateTime.UtcNow && dc.CurrentUsage < dc.MaxUsage,
-                    RemainingUsage = Math.Max(0, dc.MaxUsage - dc.CurrentUsage)
-                })
-                .ToList();
+            //var memberShipsItms = await _membershipService.GetAllMembershipAsync();
+            //var availableDiscounts = memberShipsItms.Where(c => c.Id == membershipCard.Id&& c.MemberShipDiscountCode is not null)?.Select(dc => new DiscountCodeDto
+            //{
+            //    Id = dc.MemberShipDiscountCode.Id,
+            //    Code = dc.MemberShipDiscountCode.Code,
+            //    Percentage = dc.MemberShipDiscountCode.Percentage,
+            //    MaxUsage = dc.MemberShipDiscountCode.MaxUsage,
+            //    CurrentUsage = dc.MemberShipDiscountCode.CurrentUsage,
+            //    ExpiryDate = dc.MemberShipDiscountCode.ExpiryDate,
+            //    IsActive = dc.MemberShipDiscountCode.ExpiryDate > DateTime.UtcNow && dc.MemberShipDiscountCode.CurrentUsage < dc.MemberShipDiscountCode.MaxUsage,
+            //    RemainingUsage = Math.Max(0, dc.MemberShipDiscountCode.MaxUsage - dc.MemberShipDiscountCode.CurrentUsage)
+            //});
 
             return new MembershipDto
             {
@@ -367,16 +367,20 @@ namespace TicketingSystem.Controllers
                 UserId = membershipCard.UserId,
                 UserName = membershipCard.User?.FullName ?? string.Empty,
                 UserEmail = membershipCard.User?.Email ?? string.Empty,
-                UserCategory = membershipCard.User?.Category ?? UserType.male,
+                UserPhone = membershipCard.User.Phone ?? string.Empty,
+                Ssn = membershipCard.User?.Ssn??string.Empty,
                 BookingDate = membershipCard.BookingDate,
                 Expiry = membershipCard.Expiry,
                 QrCode = membershipCard.QrCode,
                 IsActive = membershipCard.Expiry > DateTime.UtcNow,
                 DaysUntilExpiry = (int)(membershipCard.Expiry - DateTime.UtcNow).TotalDays,
                 MembershipNumber = $"MEM{membershipCard.UserId:D6}{membershipCard.BookingDate.Year}",
-                AvailableDiscounts = availableDiscounts,
-                Price = membershipCard.MembershipCard?.Price??0,
-                status = membershipCard.Status                
+                //AvailableDiscounts = availableDiscounts is not null ? availableDiscounts.FirstOrDefault(): new DiscountCodeDto(),
+                Price = membershipCard.MembershipCard?.Price ?? 0,
+                status = membershipCard.Status,
+                PartnerPhone = membershipCard.PartnerPhone,
+                PartnerName = membershipCard.PartnerName,
+                PartnerEmail = membershipCard.PartnerEmail,
             };
         }
     }

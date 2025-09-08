@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Infrastructure.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class EstablishmentDB : Migration
+    public partial class EtaplishmentDB : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -17,12 +17,49 @@ namespace Infrastructure.Data.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    ServiceCategory = table.Column<int>(type: "int", nullable: false),
                     Price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     IsActive = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_MembershipCards", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MemberShipDiscountCodes",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Code = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Percentage = table.Column<int>(type: "int", nullable: false),
+                    MaxUsage = table.Column<int>(type: "int", nullable: false),
+                    CurrentUsage = table.Column<int>(type: "int", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    ExpiryDate = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MemberShipDiscountCodes", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "OrderDiscountCodes",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Code = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Percentage = table.Column<int>(type: "int", nullable: false),
+                    MaxUsage = table.Column<int>(type: "int", nullable: false),
+                    CurrentUsage = table.Column<int>(type: "int", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    ExpiryDate = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_OrderDiscountCodes", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -35,7 +72,6 @@ namespace Infrastructure.Data.Migrations
                     Email = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Ssn = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Phone = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    Category = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     MembershipId = table.Column<int>(type: "int", nullable: true)
                 },
@@ -81,17 +117,29 @@ namespace Infrastructure.Data.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     UserId = table.Column<int>(type: "int", nullable: false),
                     UserEmail = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    PartnerEmail = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    PartnerName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    PartnerPhone = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    PartnerSsn = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     MembershipCardId = table.Column<int>(type: "int", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
                     MembershipNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     BookingDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Expiry = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    QrCode = table.Column<string>(type: "NVARCHAR(MAX)", nullable: false)
+                    QrCode = table.Column<string>(type: "NVARCHAR(MAX)", nullable: false),
+                    MemberShipDiscountCodeId = table.Column<int>(type: "int", nullable: true),
+                    DiscountAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    ApplyDiscount = table.Column<bool>(type: "bit", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_MemberShips", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_MemberShips_MemberShipDiscountCodes_MemberShipDiscountCodeId",
+                        column: x => x.MemberShipDiscountCodeId,
+                        principalTable: "MemberShipDiscountCodes",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_MemberShips_MembershipCards_MembershipCardId",
                         column: x => x.MembershipCardId,
@@ -114,14 +162,13 @@ namespace Infrastructure.Data.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     UserId = table.Column<int>(type: "int", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
-                    DiscountCode = table.Column<int>(type: "int", nullable: true),
+                    OrderDiscountCodeId = table.Column<int>(type: "int", nullable: true),
                     TotalAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     FinalAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     BillingFirstName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     BillingLastName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Country = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     IdNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     ApplyDiscount = table.Column<bool>(type: "bit", nullable: false),
                     UserEmail = table.Column<string>(type: "nvarchar(max)", nullable: false)
@@ -130,42 +177,16 @@ namespace Infrastructure.Data.Migrations
                 {
                     table.PrimaryKey("PK_Orders", x => x.Id);
                     table.ForeignKey(
+                        name: "FK_Orders_OrderDiscountCodes_OrderDiscountCodeId",
+                        column: x => x.OrderDiscountCodeId,
+                        principalTable: "OrderDiscountCodes",
+                        principalColumn: "Id");
+                    table.ForeignKey(
                         name: "FK_Orders_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "DiscountCodes",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<int>(type: "int", nullable: true),
-                    UserEmail = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Code = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Percentage = table.Column<int>(type: "int", nullable: false),
-                    MaxUsage = table.Column<int>(type: "int", nullable: false),
-                    CurrentUsage = table.Column<int>(type: "int", nullable: false),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false),
-                    ExpiryDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    MemberShipId = table.Column<int>(type: "int", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_DiscountCodes", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_DiscountCodes_MemberShips_MemberShipId",
-                        column: x => x.MemberShipId,
-                        principalTable: "MemberShips",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_DiscountCodes_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -256,20 +277,10 @@ namespace Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_DiscountCodes_Code",
-                table: "DiscountCodes",
+                name: "IX_MemberShipDiscountCodes_Code",
+                table: "MemberShipDiscountCodes",
                 column: "Code",
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_DiscountCodes_MemberShipId",
-                table: "DiscountCodes",
-                column: "MemberShipId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_DiscountCodes_UserId",
-                table: "DiscountCodes",
-                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_MembershipReviewRequests_MembershipCardId",
@@ -287,15 +298,31 @@ namespace Infrastructure.Data.Migrations
                 column: "MembershipCardId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_MemberShips_MemberShipDiscountCodeId",
+                table: "MemberShips",
+                column: "MemberShipDiscountCodeId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_MemberShips_UserId",
                 table: "MemberShips",
                 column: "UserId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_OrderDiscountCodes_Code",
+                table: "OrderDiscountCodes",
+                column: "Code",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_OrderItems_OrderId",
                 table: "OrderItems",
                 column: "OrderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Orders_OrderDiscountCodeId",
+                table: "Orders",
+                column: "OrderDiscountCodeId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Orders_UserId",
@@ -343,9 +370,6 @@ namespace Infrastructure.Data.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "DiscountCodes");
-
-            migrationBuilder.DropTable(
                 name: "MembershipReviewRequests");
 
             migrationBuilder.DropTable(
@@ -364,7 +388,13 @@ namespace Infrastructure.Data.Migrations
                 name: "Orders");
 
             migrationBuilder.DropTable(
+                name: "MemberShipDiscountCodes");
+
+            migrationBuilder.DropTable(
                 name: "MembershipCards");
+
+            migrationBuilder.DropTable(
+                name: "OrderDiscountCodes");
 
             migrationBuilder.DropTable(
                 name: "Users");

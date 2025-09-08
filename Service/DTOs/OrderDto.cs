@@ -10,14 +10,12 @@ namespace Travelsite.DTOs
         public int UserId { get; set; }
         public string UserName { get; set; } = string.Empty;
         public OrderStatus Status { get; set; }
-        public int? DiscountCode { get; set; }
+        //public string? DiscountCode { get; set; }
         public decimal TotalAmount { get; set; }
         public decimal FinalAmount { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public string BillingFUllName { get; set; } = string.Empty;
-        //public string BillingLastName { get; set; } = string.Empty;
-        public string Country { get; set; } = string.Empty;
         public string IdNumber { get; set; } = string.Empty;
         public List<OrderItemDto> OrderItems { get; set; } = new List<OrderItemDto>();
     }
@@ -35,9 +33,9 @@ namespace Travelsite.DTOs
         [MaxLength(150)]
         public string BillingFUllName { get; set; } = string.Empty;
         
-        [Required]
-        [MaxLength(50)]
-        public string Country { get; set; } = string.Empty;
+        //[Required]
+        //[MaxLength(50)]
+        //public string Country { get; set; } = string.Empty;
         
         [Required]
         [MaxLength(50)]

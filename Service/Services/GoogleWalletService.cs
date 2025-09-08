@@ -1385,9 +1385,9 @@ namespace TicketingSystem.Services
             _env = env;
             var walletSettings = configuration.GetSection("GoogleWalletSettings");
 
-            string keyPath = Path.Combine(Directory.GetCurrentDirectory(), "GoogleKeys", "natchibaech-793937ea412e.json");
+            //string keyPath = Path.Combine(Directory.GetCurrentDirectory(), "GoogleKeys", "natchibaech-793937ea412e.json");
             //keyFilePath = Path.Combine(_env.WebRootPath, "GoogleKeys", "natchibaech-9e515a4f00be.json");// walletSettings["ServiceAccountKeyPath"] ;
-            keyFilePath = Path.Combine(Directory.GetCurrentDirectory(), "GoogleKeys", "natchibaech-793937ea412e.json"); ;// walletSettings["ServiceAccountKeyPath"] ;
+            keyFilePath = Path.Combine(Directory.GetCurrentDirectory(), "GoogleKeys", "natchibaech-470810-cfae0204bb79.json"); ;// walletSettings["ServiceAccountKeyPath"] ;
             issuerId = walletSettings["IssuerId"];
             classSuffix = walletSettings["ClassId"];
             Auth();

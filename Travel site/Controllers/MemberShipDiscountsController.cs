@@ -1,5 +1,6 @@
 using Domain.Entity;
 using Microsoft.AspNetCore.Mvc;
+using Service.Services;
 using TicketingSystem.Services;
 using Travelsite.DTOs;
 
@@ -7,11 +8,11 @@ namespace TicketingSystem.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class DiscountsController : ControllerBase
+    public class MemberShipDiscountsController : ControllerBase
     {
-        private readonly IDiscountService _discountService;
+        private readonly IMemberShipDiscountService _discountService;
 
-        public DiscountsController(IDiscountService discountService)
+        public MemberShipDiscountsController(IMemberShipDiscountService discountService)
         {
             _discountService = discountService;
         }
@@ -19,8 +20,8 @@ namespace TicketingSystem.Controllers
         /// <summary>
         /// Apply discount code to order
         /// </summary>
-        [HttpPost("apply")]
-        public async Task<ActionResult<DiscountResultDto>> ApplyDiscount([FromBody] ApplyDiscountDto applyDiscountDto)
+          [HttpPost("ApplyMemberDiscount")]
+        public async Task<ActionResult<DiscountResultDto>> ApplyMemberDiscount([FromBody] ApplyMemberDiscountDto applyDiscountDto)
         {
             try
             {
@@ -31,12 +32,15 @@ namespace TicketingSystem.Controllers
                 //    return BadRequest(ModelState);
                 //if (discountCode.Code != applyDiscountDto.Code)
                 //    return BadRequest(new ApiResponse(404, "not found code"));
-                var discountAmount = await _discountService.ApplyDiscountAsync(
+                if(applyDiscountDto.MemberShipId.HasValue ==false)
+                    return BadRequest(ModelState);
+
+                var discountAmount = await _discountService.ApplyMembershipDiscountAsync(
                     applyDiscountDto.Code,
-                    applyDiscountDto.OrderId);
+                    applyDiscountDto.MemberShipId.Value);
                 var discountCode = await _discountService.GetDiscountCodeByCodeAsync(applyDiscountDto.Code);
 
-                var finalAmount = applyDiscountDto.Amount - discountAmount;
+                //var finalAmount = applyDiscountDto.Amount - discountAmount;
 
                 var result = new DiscountResultDto
                 {
@@ -122,10 +126,10 @@ namespace TicketingSystem.Controllers
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                var discountCode = new DiscountCode
+                var discountCode = new MemberShipDiscountCode
                 {
-                    MemberShipId = createDiscountDto.MemberId??null,
-                    UserId = createDiscountDto.UserId??null,
+                    //MemberShipId = createDiscountDto.MemberId??null,
+                    //UserId = createDiscountDto.UserId??null,
                     Code = createDiscountDto.Code.ToUpper(),
                     Percentage = createDiscountDto.Percentage,
                     MaxUsage = createDiscountDto.MaxUsage,
@@ -162,9 +166,9 @@ namespace TicketingSystem.Controllers
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                var discountCode = new DiscountCode
+                var discountCode = new MemberShipDiscountCode
                 {
-                    UserId = updateDiscountDto.UserId,
+                    //UserId = updateDiscountDto.UserId,
                     Code = updateDiscountDto.Code.ToUpper(),
                     Percentage = updateDiscountDto.Percentage,
                     MaxUsage = updateDiscountDto.MaxUsage,
@@ -241,18 +245,18 @@ namespace TicketingSystem.Controllers
             }
         }
 
-        private static DiscountCodeDto MapToDiscountCodeDto(DiscountCode discountCode)
+        private static DiscountCodeDto MapToDiscountCodeDto(MemberShipDiscountCode discountCode)
         {
             return new DiscountCodeDto
             {
                 Id = discountCode.Id,
-                UserId = discountCode.UserId,
+                //UserId = discountCode.UserId,
                 Code = discountCode.Code,
                 Percentage = discountCode.Percentage,
                 MaxUsage = discountCode.MaxUsage,
                 CurrentUsage = discountCode.CurrentUsage,
                 ExpiryDate = discountCode.ExpiryDate,//discountCode.ExpiryDate > DateTime.UtcNow && discountCode.CurrentUsage < discountCode.MaxUsage,
-                
+
                 IsActive = discountCode.IsActive,
                 RemainingUsage = Math.Max(0, discountCode.MaxUsage - discountCode.CurrentUsage)
             };

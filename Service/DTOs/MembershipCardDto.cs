@@ -5,6 +5,7 @@ namespace Travelsite.DTOs
 {
     public class MembershipCardDto
     {
+        public ServiceCategory ServiceCategory { get; set; }
         public decimal Price { get; set; }
         public bool IsActive { get; set; } = true;
     }
@@ -17,14 +18,21 @@ namespace Travelsite.DTOs
         public int UserId { get; set; }
         public string UserName { get; set; }
         public string UserEmail { get; set; }
+        public string? PartnerEmail { get; set; }
+        public string? PartnerName { get; set; }
+        public string? PartnerPhone { get; set; }
         public OrderStatus status { get; set; }
-        public UserType UserCategory { get; set; }
+        public string Ssn { get; set; }
         public DateTime BookingDate { get; set; }
         public DateTime Expiry { get; set; }
         public string QrCode { get; set; }
         public int DaysUntilExpiry { get; set; }
         public string MembershipNumber { get; set; }
-        public List<DiscountCodeDto> AvailableDiscounts { get; set; }
+        public virtual int? DiscountCodeId { get; set; }
+        public decimal? DiscountAmount { get; set; }
+        public bool? ApplyDiscount { get; set; } = false;
+        //public DiscountCodeDto? AvailableDiscounts { get; set; }
+        public string UserPhone { get; set; }
     }
 
     public class IssueMembershipCardDto
@@ -33,21 +41,21 @@ namespace Travelsite.DTOs
         [EmailAddress]
         public string userEmail { get; set; }
         public string phone { get; set; }
-        public UserType type { get; set; }
+        //public UserType type { get; set; }
         public string Fullname { get; set; }
-
-        
-
-
-
+        public string Ssn { get; set; }
 
         [Required]
         public int MembershipCardId { get; set; }
         
+        public string? PartnerEmail { get; set; }
+        public string? PartnerName { get; set; }
+        public string? PartnerPhone { get; set; }
+        public string? PartnerSsn { get; set; }
         
         //public int ValidityMonths { get; set; } = 12; // Default 1 year
         public decimal Price { get; set; } = 7000.00m;
-        
+
         //public OrderStatus Status { get; set; }
 
         //public UpdateMembershipCardDto UpdatemembershipCardDto { get; set; }
@@ -76,7 +84,7 @@ namespace Travelsite.DTOs
         public int ActiveMembers { get; set; }
         public int ExpiredMembers { get; set; }
         public int ExpiringThisMonth { get; set; }
-        public Dictionary<UserType, int> MembersByCategory { get; set; } = new();
+        public Dictionary<ServiceCategory, int> MembersByCategory { get; set; } = new();
         public List<MemberShip> RecentlyIssued { get; set; } = new();
         public List<MemberShip> ExpiringSoon { get; set; } = new();
         public double ActivePercentage { get; set; }

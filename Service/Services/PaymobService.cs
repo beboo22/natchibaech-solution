@@ -170,7 +170,7 @@ namespace TicketingSystem.Services
             {
                 auth_token = authToken,
                 delivery_needed = false,
-                amount_cents = (int)(membership.MembershipCard.Price * 100),
+                amount_cents = (int)(membership.DiscountAmount is not null? membership.DiscountAmount*100: membership.MembershipCard.Price * 100),
                 currency = "SAR",
                 merchant_order_id = $"MEM/{Guid.NewGuid()}/{membership.Id}",
                 callback_url = callbackUrl ?? _configuration["PaymobSettings:CallbackUrl"],
@@ -221,7 +221,7 @@ namespace TicketingSystem.Services
             var paymentKeyRequest = new
             {
                 auth_token = authToken,
-                amount_cents = (int)(membership.MembershipCard.Price * 100),
+                amount_cents = (int)(membership.DiscountAmount is not null ? membership.DiscountAmount *100: membership.MembershipCard.Price * 100),
                 expiration = 3600,
                 order_id = paymobOrderId,
                 billing_data = new

@@ -21,7 +21,7 @@ namespace TicketingSystem.Services
         }
 
         #region face
-        public async Task<bool> SendTicketByEmailAsync(string email, string ticketNumber, string qrCodeBase64, string memberName, DateTime expiryDate)
+        public async Task<bool> SendSingleTicketByEmailAsync(string email, string ticketNumber, string qrCodeBase64, string memberName, DateTime bookingDate, DateTime expiryDate, string phone)
         {
             try
             {
@@ -47,7 +47,51 @@ namespace TicketingSystem.Services
 
                 mailMessage.To.Add(email);
 
-                var htmlBody = GenerateTicketEmailTemplate(ticketNumber, memberName,expiryDate, qrCodeBase64);
+                var htmlBody = GenerateTicketEmailTemplateWithoutPartner(ticketNumber, memberName, email, phone, bookingDate, expiryDate, qrCodeBase64);
+                mailMessage.Body = htmlBody;
+
+                // Attach QR code as image
+                var qrCodeBytes = Convert.FromBase64String(qrCodeBase64);
+                var qrCodeAttachment = new Attachment(new MemoryStream(qrCodeBytes), $"ticket-{ticketNumber}.png", "image/png");
+                mailMessage.Attachments.Add(qrCodeAttachment);
+
+                await client.SendMailAsync(mailMessage);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send ticket email to {Email}", email);
+                return false;
+            }
+
+        }
+        public async Task<bool> SendCoupleTicketByEmailAsync(string email, string ticketNumber, string qrCodeBase64, string memberName, DateTime bookingDate, DateTime expiryDate, string phone, string partnerName)
+        {
+            try
+            {
+                var smtpSettings = _configuration.GetSection("SmtpSettings");
+                var smtpHost = smtpSettings["Host"];
+                var smtpPort = int.Parse(smtpSettings["Port"] ?? "587");
+                var smtpUsername = smtpSettings["Username"];
+                var smtpPassword = smtpSettings["Password"];
+                var fromEmail = smtpSettings["FromEmail"];
+
+                using var client = new SmtpClient(smtpHost, smtpPort)
+                {
+                    Credentials = new NetworkCredential(smtpUsername, smtpPassword),
+                    EnableSsl = true
+                };
+
+                var mailMessage = new MailMessage
+                {
+                    From = new MailAddress(fromEmail ?? "noreply@ticketing.com", "Ticketing System"),
+                    Subject = $"Your Ticket - {ticketNumber}",
+                    IsBodyHtml = true
+                };
+
+                mailMessage.To.Add(email);
+
+                var htmlBody = GenerateTicketEmailTemplateWithPartner(ticketNumber, memberName, email, phone,partnerName, bookingDate, expiryDate, qrCodeBase64);
                 mailMessage.Body = htmlBody;
 
                 // Attach QR code as image
@@ -66,8 +110,8 @@ namespace TicketingSystem.Services
 
         }
         #endregion
-        
-        
+
+
         #region test by Twilio
 
         public async Task<bool> SendTicketByWhatsAppAsync(string phoneNumber, string ticketNumber, string qrCodeBase64, string memberName, DateTime expiryDate)
@@ -84,7 +128,7 @@ namespace TicketingSystem.Services
                 var authToken = whatsappSettings["AuthToken"];
                 var fromNumber = whatsappSettings["FromNumber"];
 
-                
+
 
                 if (string.IsNullOrEmpty(accountSid) || string.IsNullOrEmpty(authToken) || string.IsNullOrEmpty(fromNumber))
                 {
@@ -177,9 +221,9 @@ namespace TicketingSystem.Services
         //            //        new { type = "image", image = new { link = $"data:image/png;base64,{qrCodeBase64}" } }
         //            //    }
         //            //}
-                        
-                        
-                        
+
+
+
         //                }
         //            }
         //        };
@@ -243,13 +287,17 @@ namespace TicketingSystem.Services
 
 
 
-        private static string GenerateTicketEmailTemplate(
-    string ticketNumber,
-    string memberName,
-    DateTime expiryDate,
-    string qrCodeBase64)
+        // ===== METHOD 1: With Partner Name =====
+        private static string GenerateTicketEmailTemplateWithPartner(
+            string ticketNumber,
+            string memberName,
+            string email,
+            string phone,
+            string partnerName,
+            DateTime bookingDate,
+            DateTime expiryDate,
+            string qrCodeBase64)
         {
-
             return $@"
 <!DOCTYPE html>
 <html>
@@ -262,48 +310,39 @@ namespace TicketingSystem.Services
         background-color: #f5f5f5;
     }}
     .container {{
-        max-width: 900px;
+        max-width: 950px;
         margin: 0 auto;
-        background-color: white;
-        padding: 20px;
+        background-color: #fff;
         border-radius: 12px;
         box-shadow: 0 2px 12px rgba(0,0,0,0.1);
         display: flex;
         gap: 20px;
+        padding: 20px;
     }}
     .card {{
         flex: 1;
-        border: 1px solid #eee;
         border-radius: 12px;
         padding: 20px;
         background: #fff;
     }}
-    .header-logo {{
-        text-align: center;
-        margin-bottom: 15px;
+    .left-header {{
+        height: 100px;
+        background: linear-gradient(90deg, #ff6600, #ff8c1a);
+        border-radius: 12px 12px 0 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }}
-    .header-logo img {{
-        max-width: 120px;
-    }}
-    .ticket-info p {{
-        margin: 6px 0;
+    .info {{
+        margin-top: 15px;
         font-size: 14px;
     }}
-    .qr-code, .barcode {{
+    .info p {{
+        margin: 6px 0;
+    }}
+    .qr-code {{
+        margin-top: 20px;
         text-align: center;
-        margin: 15px 0;
-    }}
-    .barcode img {{
-        max-width: 200px;
-    }}
-    .wallet-buttons {{
-        display: flex;
-        justify-content: center;
-        gap: 10px;
-        margin-top: 10px;
-    }}
-    .wallet-buttons img {{
-        height: 40px;
     }}
     .benefits ul {{
         list-style: none;
@@ -313,19 +352,24 @@ namespace TicketingSystem.Services
         margin: 8px 0;
         font-size: 14px;
     }}
-    .benefits li::before {{
-        content: '✔️ ';
-        color: green;
-    }}
     .download-btn {{
         display: inline-block;
         background-color: #ff6600;
         color: #fff;
-        padding: 10px 20px;
+        padding: 12px 20px;
         border-radius: 8px;
         text-decoration: none;
         margin: 15px 0;
         font-weight: bold;
+    }}
+    .wallet-buttons {{
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 15px;
+    }}
+    .wallet-buttons img {{
+        height: 40px;
     }}
   </style>
 </head>
@@ -334,53 +378,182 @@ namespace TicketingSystem.Services
 
     <!-- LEFT CARD -->
     <div class='card'>
-      <div class='header-logo'>
-        <img src='https://iili.io/KKJWVql.png' alt='Logo' />
-        <h3>NATCHI BAECH</h3>
+      <div class='left-header'>
+        <img src='https://images2.imgbox.com/59/b4/L3jpwh9t_o.png' alt='Logo' width='80'/>
       </div>
-
-      <div class='ticket-info'>
-        <p><strong>Member Name:</strong> {memberName}</p>
-        <p><strong>ID Number:</strong> {ticketNumber}</p>
-        <p><strong>Booking Date:</strong> {DateTime.UtcNow:dd/MM/yyyy}</p>
-        <p><strong>Expiry Date:</strong> {expiryDate:dd/MM/yyyy}</p>
+      <div class='info'>
+        <p><strong>Member name:</strong> {memberName}</p>
+        <p><strong>Email:</strong> {email}</p>
+        <p><strong>Phone:</strong> {phone}</p>
+        <p><strong>Partner name:</strong> {partnerName}</p>
+        <p><strong>ID number:</strong> {ticketNumber}</p>
+        <p><strong>Booking day:</strong> {bookingDate:dd/MM/yyyy}</p>
+        <p><strong>Expiry Booking:</strong> {expiryDate:dd/MM/yyyy}</p>
       </div>
-
       <div class='qr-code'>
-        <img src='data:image/png;base64,{qrCodeBase64}' alt='QR Code' />
+        <img src='data:image/png;base64,{qrCodeBase64}' width='120' alt='QR Code'/>
       </div>
-
-      
       <div class='wallet-buttons'>
-        <img src='https://iili.io/KKJShOl.jpg' alt='Apple Wallet' />
-        <img src='https://iili.io/KKJOkI1.png' alt='Google Wallet' />
+        <img src='https://images2.imgbox.com/ab/16/KY1j2muj_o.jpeg' alt='Apple Wallet'/>
+        <img src='https://images2.imgbox.com/5e/02/EbTMPGEm_o.png' alt='Google Wallet'/>
       </div>
     </div>
 
     <!-- RIGHT CARD -->
     <div class='card'>
-      <h2 style='text-align:center;'>Digital Member Ticket</h2>
-      <h3 style='text-align:center;'>NATCHI BAECH</h3>
+      <h2 style='text-align:center;'>Digital member card</h2>
+      <p style='text-align:center;'>Membership Benefits:</p>
+      <p style='text-align:center;'>Unlimited access to the resort throughout the year</p>
 
       <div class='benefits'>
         <ul>
-          <li>Visit VIP place</li>
-          <li>Stay any long time</li>
-          <li>Take any drink free</li>
-          <li>Take any food free</li>
+          <li>Visit vip place</li>
+          <li>Exclusive discounts on food and beverages</li>
+          <li>Priority booking for members-only Natchi events</li>
+          <li>VIP seating reservations at the beach and club areas</li>
         </ul>
       </div>
 
       <div style='text-align:center;'>
-        <a href='#' class='download-btn'>Download Ticket</a>
+        <a href='#' class='download-btn'>Download membership card</a>
       </div>
-
-      
+    </div>
 
   </div>
 </body>
 </html>";
         }
+
+        // ===== METHOD 2: Without Partner Name =====
+        private static string GenerateTicketEmailTemplateWithoutPartner(
+            string ticketNumber,
+            string memberName,
+            string email,
+            string phone,
+            DateTime bookingDate,
+            DateTime expiryDate,
+            string qrCodeBase64)
+        {
+            return $@"
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {{
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f5f5f5;
+    }}
+    .container {{
+        max-width: 950px;
+        margin: 0 auto;
+        background-color: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+        display: flex;
+        gap: 20px;
+        padding: 20px;
+    }}
+    .card {{
+        flex: 1;
+        border-radius: 12px;
+        padding: 20px;
+        background: #fff;
+    }}
+    .left-header {{
+        height: 100px;
+        background: linear-gradient(90deg, #ff6600, #ff8c1a);
+        border-radius: 12px 12px 0 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }}
+    .info {{
+        margin-top: 15px;
+        font-size: 14px;
+    }}
+    .info p {{
+        margin: 6px 0;
+    }}
+    .qr-code {{
+        margin-top: 20px;
+        text-align: center;
+    }}
+    .benefits ul {{
+        padding: 0;
+    }}
+    .benefits li {{
+        margin: 8px 0;
+        font-size: 14px;
+    }}
+    .download-btn {{
+        display: inline-block;
+        background-color: #ff6600;
+        color: #fff;
+        padding: 12px 20px;
+        border-radius: 8px;
+        text-decoration: none;
+        margin: 15px 0;
+        font-weight: bold;
+    }}
+    .wallet-buttons {{
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 15px;
+    }}
+    .wallet-buttons img {{
+        height: 40px;
+    }}
+  </style>
+</head>
+<body>
+  <div class='container'>
+
+    <!-- LEFT CARD -->
+    <div class='card'>
+      <div class='left-header'>
+        <img src='https://images2.imgbox.com/59/b4/L3jpwh9t_o.png' alt='Logo' width='80'/>
+      </div>
+      <div class='info'>
+        <p><strong>Member name:</strong> {memberName}</p>
+        <p><strong>Email:</strong> {email}</p>
+        <p><strong>Phone:</strong> {phone}</p>
+        <p><strong>ID number:</strong> {ticketNumber}</p>
+        <p><strong>Booking day:</strong> {bookingDate:dd/MM/yyyy}</p>
+        <p><strong>Expiry Booking:</strong> {expiryDate:dd/MM/yyyy}</p>
+      </div>
+      <div class='qr-code'>
+        <img src='data:image/png;base64,{qrCodeBase64}' width='120' alt='QR Code'/>
+      </div>
+      <div class='wallet-buttons'>
+        <img src='https://images2.imgbox.com/ab/16/KY1j2muj_o.jpeg' alt='Apple Wallet'/>
+        <img src='https://images2.imgbox.com/5e/02/EbTMPGEm_o.png' alt='Google Wallet'/>
+      </div>
+    </div>
+
+    <!-- RIGHT CARD -->
+    <div class='card'>
+      <h2 style='text-align:center;'>Digital member card</h2>
+      <p style='text-align:center;'>Membership Benefits:</p>
+      <p style='text-align:center;'>Unlimited access to the resort throughout the year</p>
+
+      <div class='benefits'>
+        <ul>
+          <li>Visit vip place</li>
+          <li>Exclusive discounts on food and beverages</li>
+          <li>Priority booking for members-only Natchi events</li>
+          <li>VIP seating reservations at the beach and club areas</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>";
+        }
+
 
         private static string GenerateTicketWhatsAppMessage(string ticketNumber, string memberName, DateTime expiryDate)
         {
@@ -405,14 +578,139 @@ Thank you for choosing our service! 🎉";
             return $"Your ticket {ticketNumber} for {memberName} is ready! Valid until {expiryDate:MMM dd, yyyy}. Check your email for QR code. Arrive 30min early.";
         }
 
-        
+        public async Task<bool> SendRejectedEmail(string email, string memberName)
+        {
+            try
+            {
+                var smtpSettings = _configuration.GetSection("SmtpSettings");
+                var smtpHost = smtpSettings["Host"];
+                var smtpPort = int.Parse(smtpSettings["Port"] ?? "587");
+                var smtpUsername = smtpSettings["Username"];
+                var smtpPassword = smtpSettings["Password"];
+                var fromEmail = smtpSettings["FromEmail"];
+
+                using var client = new SmtpClient(smtpHost, smtpPort)
+                {
+                    Credentials = new NetworkCredential(smtpUsername, smtpPassword),
+                    EnableSsl = true
+                };
+
+                using var mailMessage = new MailMessage
+                {
+                    From = new MailAddress(fromEmail, "Natchi Beach"),
+                    Subject = "نأسف، لم يتم قبول طلب العضوية - شاطئ Natchi",
+                    IsBodyHtml = true,
+                    Body = $@"
+<html lang='ar'>
+<body dir='rtl' style='font-family: Tahoma, Arial, sans-serif; font-size:14px; line-height:1.8;'>
+    <p>عزيزي {memberName}،</p>
+    <p>
+        نشكر لك اهتمامك بالتسجيل في عضوية شاطئ Natchi.
+    </p>
+    <p>
+        نعتذر منك، لكن نود إبلاغك بأن العدد المخصص للأعضاء قد اكتمل حاليًا.
+    </p>
+    <p>
+        نتمنى أن تنضم إلينا في أقرب فرصة عندما يتم فتح باب التسجيل مرة أخرى.
+    </p>
+    <p>
+        مع خالص التحية،
+        <br/>
+        فريق شاطئ Natchi
+    </p>
+</body>
+</html>"
+                };
+
+                mailMessage.To.Add(email);
+
+
+
+
+                await client.SendMailAsync(mailMessage);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send ticket email to {Email}", email);
+                return false;
+            }
+        }
+        public async Task<bool> SendApprovedEmail(string email, string memberName)
+        {
+            try
+            {
+                var smtpSettings = _configuration.GetSection("SmtpSettings");
+                var smtpHost = smtpSettings["Host"];
+                var smtpPort = int.Parse(smtpSettings["Port"] ?? "587");
+                var smtpUsername = smtpSettings["Username"];
+                var smtpPassword = smtpSettings["Password"];
+                var fromEmail = smtpSettings["FromEmail"];
+
+                using var client = new SmtpClient(smtpHost, smtpPort)
+                {
+                    Credentials = new NetworkCredential(smtpUsername, smtpPassword),
+                    EnableSsl = true
+                };
+
+                using var mailMessage = new MailMessage
+                {
+                    From = new MailAddress(fromEmail, "Natchi Beach"),
+                    Subject = "قبول طلب العضوية - شاطئ Natchi",
+                    IsBodyHtml = true,
+                    Body = $@"
+<html lang='ar'>
+<body dir='rtl' style='font-family: Tahoma, Arial, sans-serif; font-size:14px; line-height:1.8;'>
+    <p>عزيزي {memberName}،</p>
+    <p>
+        يسعدنا إبلاغك بأنه تم قبول طلبك للانضمام إلى عضوية شاطئ Natchi. 
+    </p>
+    <p>
+        لإتمام عملية التسجيل، يرجى الضغط على الرابط أدناه لإكمال الدفع:
+        <br/>
+        <a href='https://natchibaech.com/membership' 
+           style='color: #ffffff; background-color: #007bff; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>
+           إكمال عملية الدفع
+        </a>
+    </p>
+    <p>
+        بعد إتمام الدفع بنجاح، ستصلك رسالة تأكيد مع تفاصيل العضوية.
+    </p>
+    <p>
+        نرحب بك ضمن عائلة شاطئ Natchi ونتمنى لك تجربة مميزة معنا.
+    </p>
+</body>
+</html>"
+                };
+
+                mailMessage.To.Add(email);
+
+
+
+
+                await client.SendMailAsync(mailMessage);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send ticket email to {Email}", email);
+                return false;
+            }
+        }
+
+
+
     }
 
     public interface INotificationService
     {
-        Task<bool> SendTicketByEmailAsync(string email, string ticketNumber, string qrCodeBase64, string memberName, DateTime expiryDate);
+        Task<bool> SendSingleTicketByEmailAsync(string email, string ticketNumber, string qrCodeBase64, string memberName, DateTime bookingDate, DateTime expiryDate, string phone);
+        Task<bool> SendCoupleTicketByEmailAsync(string email, string ticketNumber, string qrCodeBase64, string memberName, DateTime bookingDate, DateTime expiryDate, string phone, string partnerName);
         Task<bool> SendTicketByWhatsAppAsync(string phoneNumber, string ticketNumber, string qrCodeBase64, string memberName, DateTime expiryDate);
         Task<bool> SendTicketBySMSAsync(string phoneNumber, string ticketNumber, string memberName, DateTime expiryDate);
+        Task<bool> SendRejectedEmail(string email, string memberName);
+        Task<bool> SendApprovedEmail(string email, string memberName);
+
         //Task<bool> SendEmail(string to, string subject, string body);
 
     }

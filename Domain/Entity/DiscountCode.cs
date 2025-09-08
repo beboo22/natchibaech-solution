@@ -2,13 +2,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Domain.Entity
 {
-    public class DiscountCode
+
+    public class MemberShipDiscountCode
     {
         public int Id { get; set; }
-        
-        public int? UserId { get; set; }
-        [EmailAddress]
-        public string UserEmail { get; set; }
         
         [Required]
         [MaxLength(50)]
@@ -22,10 +19,26 @@ namespace Domain.Entity
 
 
         public DateTime ExpiryDate { get; set; }
-        
-        // Navigation properties
-        public virtual User? User { get; set; }
-        public int?  MemberShipId { get; set; }
-        public virtual MemberShip? MemberShip { get; set; }
+        public virtual ICollection<MemberShip>? MemberShip { get; set; } = new List<MemberShip>();
     }
+    public class OrderDiscountCode
+    {
+        public int Id { get; set; }
+        
+        [Required]
+        [MaxLength(50)]
+        public string Code { get; set; } = string.Empty;
+        
+        public int Percentage { get; set; }
+        
+        public int MaxUsage { get; set; }
+        public int CurrentUsage { get; set; } = 0;
+        public bool IsActive { get; set; }
+
+
+        public DateTime ExpiryDate { get; set; }
+        public virtual ICollection<Order>? Orders { get; set; } = new List<Order>();
+    }
+
+
 }

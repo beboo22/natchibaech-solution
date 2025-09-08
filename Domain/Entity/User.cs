@@ -20,13 +20,13 @@ namespace Domain.Entity
         [MaxLength(20)]
         public string Phone { get; set; } = string.Empty;
         
-        public UserType Category { get; set; }
+        //public UserType Category { get; set; }
         
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         
         // Navigation properties
         public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
-        public virtual ICollection<DiscountCode> DiscountCodes { get; set; } = new List<DiscountCode>();
+        //public virtual ICollection<MemberShipDiscountCode> DiscountCodes { get; set; } = new List<DiscountCode>();
         public virtual int? MembershipId { get; set; }
         [ForeignKey("MembershipId")]
         public virtual MemberShip? Membership { get; set; }

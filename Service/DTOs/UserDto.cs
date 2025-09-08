@@ -9,7 +9,9 @@ namespace Travelsite.DTOs
         public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Phone { get; set; } = string.Empty;
-        public UserType Category { get; set; }
+        public string Ssn { get; set; } = string.Empty;
+        //public UserType Category { get; set; }
+
         public DateTime CreatedAt { get; set; }
     }
 
@@ -26,8 +28,8 @@ namespace Travelsite.DTOs
         
         [MaxLength(20)]
         public string Phone { get; set; } = string.Empty;
+        public string Ssn { get; set; } = string.Empty;
         
-        [Required]
-        public UserType Type { get; set; }
+       
     }
 }

@@ -409,7 +409,11 @@ namespace TicketingSystem.Controllers
                 IsValid = ticket.ExpiryDate > DateTime.UtcNow && ticket.OrderItem?.Order.Status == OrderStatus.Paid,
                
                 UserEmail = ticket.OrderItem?.Order.User?.Email ?? string.Empty,
-                UserPhone = ticket.OrderItem?.Order.User?.Phone ?? string.Empty
+                UserPhone = ticket.OrderItem?.Order.User?.Phone ?? string.Empty,
+
+                PartnerEmail = ticket.MemberShip?.PartnerEmail ??null,
+                PartnerName = ticket.MemberShip?.PartnerName ?? null,
+                PartnerPhone = ticket.MemberShip?.PartnerPhone ?? null,
             };
         }
     }

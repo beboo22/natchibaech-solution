@@ -14,14 +14,16 @@ namespace Travel_site.Controllers
         INotificationService _notificationService;
         private readonly IGoogleWalletService3 _walletService;
         IConfiguration _configuration;
+        private ITicketService _ticketService;
         //private IPaymobService _paymobService;
 
-        public TestController(INotificationService notificationService, IQRCodeService qrCodeService, IGoogleWalletService3 walletService, IConfiguration configuration)
+        public TestController(INotificationService notificationService, IQRCodeService qrCodeService, IGoogleWalletService3 walletService, IConfiguration configuration, ITicketService ticketService)
         {
             _notificationService = notificationService;
             _qrCodeService = qrCodeService;
             _walletService = walletService;
             _configuration = configuration;
+            _ticketService = ticketService;
             //_paymobService = paymobService;
         }
 
@@ -73,9 +75,14 @@ namespace Travel_site.Controllers
         [HttpGet]
         public async Task TestEmail()
         {
-            var qrCodeData = GenerateMembershipQRData("123", "beboo", UserType.male, DateTime.UtcNow.AddYears(1));
-            var qrCode = _qrCodeService.GenerateQRCode(qrCodeData);
-            await _notificationService.SendTicketByEmailAsync("dodotarek506@gmail.com", "1333", qrCode, "beboo", DateTime.UtcNow.AddMonths(1));
+            //return Redirect("https://natchibaech.com/");
+            //var qrCodeData = GenerateMembershipQRData("123", "beboo", UserType.male, DateTime.UtcNow.AddYears(1));
+            //var qrCode = _qrCodeService.GenerateQRCode(qrCodeData);
+            //await _notificationService.SendTicketByEmailAsync("dodotarek506@gmail.com", "1333", qrCode, "beboo", DateTime.UtcNow.AddMonths(1));
+
+            //await _ticketService.SendTicketAsync(1, TicketDelivery.Email, "dodotarek506@gmail.com");
+            //return Redirect("https://natchibaech.com/");
+
         }
         //[HttpGet("/wh")]
         //public async Task TestWhats()

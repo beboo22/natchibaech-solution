@@ -1,61 +1,51 @@
-using Domain.Entity;
+﻿using Domain.Entity;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace TicketingSystem.Services
+namespace Service.Services
 {
-    public class DiscountService : IDiscountService
+    public class MemberShipDiscountService:IMemberShipDiscountService
     {
         private readonly ApplicationDbContext _context;
 
-        public DiscountService(ApplicationDbContext context)
+        public MemberShipDiscountService(ApplicationDbContext context)
         {
             _context = context;
         }
 
-        public async Task<IEnumerable<DiscountCode>> GetAllDiscountCodesAsync()
+        public async Task<IEnumerable<MemberShipDiscountCode>> GetAllDiscountCodesAsync()
         {
-            return await _context.DiscountCodes
-                .Include(dc => dc.User)
+            return await _context.MemberShipDiscountCodes
+                .Include(dc => dc.MemberShip)
                 .OrderByDescending(dc => dc.Id)
                 .ToListAsync();
         }
 
-        public async Task<DiscountCode?> GetDiscountCodeByCodeAsync(string code)
+        public async Task<MemberShipDiscountCode?> GetDiscountCodeByCodeAsync(string code)
         {
-            return await _context.DiscountCodes
-                .Include(dc => dc.User)
+            return await _context.MemberShipDiscountCodes
+                .Include(dc => dc.MemberShip)
                 .FirstOrDefaultAsync(dc => dc.Code == code);
         }
 
-        public async Task<DiscountCode> CreateDiscountCodeAsync(DiscountCode discountCode)
+        public async Task<MemberShipDiscountCode> CreateDiscountCodeAsync(MemberShipDiscountCode discountCode)
         {
             // Check if code already exists
             var existingCode = await GetDiscountCodeByCodeAsync(discountCode.Code);
             if (existingCode != null)
                 throw new ArgumentException("Discount code already exists");
 
-            // Validate membership card if provided
-            if (discountCode.UserId.HasValue)
-            {
-                var membershipExists = await _context.Users
-                    .AnyAsync(mc => mc.Id == discountCode.UserId.Value);
-                if (!membershipExists)
-                    throw new ArgumentException("User  not found");
-            }
-            if (discountCode.MemberShipId.HasValue)
-            {
-                var membershipExists = await _context.MemberShips
-                    .AnyAsync(mc => mc.Id == discountCode.MemberShipId.Value);
-                if (!membershipExists)
-                    throw new ArgumentException("MemberShip  not found");
-            }
 
             // Ensure expiry date is in the future
             if (discountCode.ExpiryDate <= DateTime.UtcNow)
                 throw new ArgumentException("Expiry date must be in the future");
 
-            _context.DiscountCodes.Add(discountCode);
+            _context.MemberShipDiscountCodes.Add(discountCode);
             try
             {
 
@@ -68,45 +58,6 @@ namespace TicketingSystem.Services
             return discountCode;
         }
 
-        public async Task<decimal> ApplyDiscountAsync(string code, int OrderId)
-        {
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
-            {
-
-                var discountCode = await GetDiscountCodeByCodeAsync(code);
-
-                if (discountCode == null)
-                    throw new ArgumentException("Invalid discount code");
-
-                var validationResult = ValidateDiscountCode(discountCode);
-                if (!validationResult.IsValid)
-                    throw new ArgumentException(validationResult.ErrorMessage);
-
-                // Calculate discount amount
-
-                var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == OrderId);
-                if(order == null || order.Status == OrderStatus.Paid)
-                    throw new ArgumentException("Invalid order code");
-                
-                var discountAmount = (order.TotalAmount * discountCode.Percentage) / 100m;
-                order.FinalAmount = order.TotalAmount - discountAmount;
-                order.ApplyDiscount = true;
-                
-                // Update usage count
-                discountCode.CurrentUsage++;
-                await _context.SaveChangesAsync();
-                // Commit transaction
-                await transaction.CommitAsync();
-                return discountAmount;
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                throw new Exception(ex.Message, ex.InnerException);
-            }
-        }
-
         public async Task<bool> ValidateDiscountCodeAsync(string code)
         {
             var discountCode = await GetDiscountCodeByCodeAsync(code);
@@ -117,16 +68,16 @@ namespace TicketingSystem.Services
             return validationResult.IsValid;
         }
 
-        public async Task<DiscountCode?> UpdateDiscountCodeAsync(int id, DiscountCode updatedDiscountCode)
+        public async Task<MemberShipDiscountCode?> UpdateDiscountCodeAsync(int id, MemberShipDiscountCode updatedDiscountCode)
         {
-            var existingCode = await _context.DiscountCodes.FindAsync(id);
+            var existingCode = await _context.MemberShipDiscountCodes.FindAsync(id);
             if (existingCode == null)
                 return null;
 
             // Check if new code already exists (if code is being changed)
             if (existingCode.Code != updatedDiscountCode.Code)
             {
-                var codeExists = await _context.DiscountCodes
+                var codeExists = await _context.MemberShipDiscountCodes
                     .AnyAsync(dc => dc.Code == updatedDiscountCode.Code && dc.Id != id);
                 if (codeExists)
                     throw new ArgumentException("Discount code already exists");
@@ -136,7 +87,7 @@ namespace TicketingSystem.Services
             existingCode.Percentage = updatedDiscountCode.Percentage;
             existingCode.MaxUsage = updatedDiscountCode.MaxUsage;
             existingCode.ExpiryDate = updatedDiscountCode.ExpiryDate;
-            existingCode.UserId = updatedDiscountCode.UserId;
+            //existingCode.UserId = updatedDiscountCode.UserId;
             existingCode.CurrentUsage = updatedDiscountCode.CurrentUsage;
             existingCode.IsActive = updatedDiscountCode.IsActive;
 
@@ -146,16 +97,16 @@ namespace TicketingSystem.Services
 
         public async Task<bool> DeleteDiscountCodeAsync(int id)
         {
-            var discountCode = await _context.DiscountCodes.FindAsync(id);
+            var discountCode = await _context.MemberShipDiscountCodes.FindAsync(id);
             if (discountCode == null)
                 return false;
 
-            _context.DiscountCodes.Remove(discountCode);
+            _context.MemberShipDiscountCodes.Remove(discountCode);
             await _context.SaveChangesAsync();
             return true;
         }
 
-        private static DiscountValidationResult ValidateDiscountCode(DiscountCode discountCode)
+        private static DiscountValidationResult ValidateDiscountCode(MemberShipDiscountCode discountCode)
         {
             // Check if expired
             if (discountCode.ExpiryDate <= DateTime.UtcNow)
@@ -174,6 +125,45 @@ namespace TicketingSystem.Services
 
 
 
+        public async Task<decimal> ApplyMembershipDiscountAsync(string code, int? MembershipId)
+        {
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+
+                var discountCode = await GetDiscountCodeByCodeAsync(code);
+
+                if (discountCode == null)
+                    throw new ArgumentException("Invalid discount code");
+
+                var validationResult = ValidateDiscountCode(discountCode);
+                if (!validationResult.IsValid)
+                    throw new ArgumentException(validationResult.ErrorMessage);
+
+                // Calculate discount amount
+                var Membership = await _context.MemberShips.Include(c => c.MembershipCard).FirstOrDefaultAsync(o => o.Id == MembershipId && o.ApplyDiscount == false);
+                if (Membership == null || Membership.Status == OrderStatus.Paid)
+                    throw new ArgumentException("Membership Not found or paid or Applied already");
+
+                var discountAmount = (Membership.MembershipCard.Price * discountCode.Percentage) / 100m;
+                Membership.DiscountAmount = Membership.MembershipCard.Price - discountAmount;
+                Membership.ApplyDiscount = true;
+                Membership.MemberShipDiscountCodeId = discountCode.Id;
+
+                // Update usage count
+                discountCode.CurrentUsage++;
+                await _context.SaveChangesAsync();
+                // Commit transaction
+                await transaction.CommitAsync();
+                return discountAmount;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                throw new Exception(ex.Message, ex.InnerException);
+            }
+        }
 
 
         private class DiscountValidationResult
@@ -187,5 +177,6 @@ namespace TicketingSystem.Services
                 ErrorMessage = errorMessage;
             }
         }
+
     }
 }

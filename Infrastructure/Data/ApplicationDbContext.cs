@@ -13,7 +13,8 @@ namespace Infrastructure.Data
         //public DbSet<Product> Products { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
-        public DbSet<DiscountCode> DiscountCodes { get; set; }
+        public DbSet<OrderDiscountCode> OrderDiscountCodes { get; set; }
+        public DbSet<MemberShipDiscountCode> MemberShipDiscountCodes { get; set; }
         public DbSet<Transaction> Transactions { get; set; }
         public DbSet<Ticket> Tickets { get; set; }
         public DbSet<MembershipCard> MembershipCards { get; set; }
@@ -35,6 +36,8 @@ namespace Infrastructure.Data
 
             modelBuilder.Entity<MemberShip>().Property(m => m.QrCode).HasColumnType("NVARCHAR(MAX)");
             modelBuilder.Entity<MembershipCard>().Property(m => m.Price).HasColumnType("decimal(18,2)");
+            modelBuilder.Entity<MemberShip>().Property(m => m.DiscountAmount).IsRequired(false).HasColumnType("decimal(18,2)");
+            modelBuilder.Entity<MemberShip>().Property(m => m.MemberShipDiscountCodeId).IsRequired(false);
 
             // Order configurations
             modelBuilder.Entity<Order>(entity =>
@@ -57,15 +60,27 @@ namespace Infrastructure.Data
             });
 
             // DiscountCode configurations
-            modelBuilder.Entity<DiscountCode>(entity =>
+            modelBuilder.Entity<MemberShipDiscountCode>(entity =>
             {
+
                 entity.HasIndex(e => e.Code).IsUnique();
-                entity.HasOne(dc => dc.User)
-                      .WithMany(mc => mc.DiscountCodes)
-                      .HasForeignKey(dc => dc.UserId);
-                entity.HasOne(d=>d.MemberShip)
-                .WithMany(m=>m.DiscountCodes)
-                .HasForeignKey(d=>d.MemberShipId).OnDelete(DeleteBehavior.NoAction);//while deleting
+                //entity.HasOne(dc => dc.User)
+                //      .WithMany(mc => mc.DiscountCodes)
+                //      .HasForeignKey(dc => dc.UserId);
+                entity.HasMany(d=>d.MemberShip)
+                .WithOne(m=>m.MemberShipDiscountCode)
+                .HasForeignKey(d=>d.MemberShipDiscountCodeId).OnDelete(DeleteBehavior.NoAction);//while deleting
+            });
+            modelBuilder.Entity<OrderDiscountCode>(entity =>
+            {
+
+                entity.HasIndex(e => e.Code).IsUnique();
+                //entity.HasOne(dc => dc.User)
+                //      .WithMany(mc => mc.DiscountCodes)
+                //      .HasForeignKey(dc => dc.UserId);
+                entity.HasMany(d=>d.Orders)
+                .WithOne(m=>m.OrderDiscountCode)
+                .HasForeignKey(d=>d.OrderDiscountCodeId).OnDelete(DeleteBehavior.NoAction);//while deleting
             });
 
             // Transaction configurations

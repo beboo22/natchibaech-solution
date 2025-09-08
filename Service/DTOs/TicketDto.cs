@@ -23,6 +23,13 @@ namespace Travelsite.DTOs
         public string ProductName { get; set; } = string.Empty;
         public string UserEmail { get; set; } = string.Empty;
         public string UserPhone { get; set; } = string.Empty;
+
+        public string? PartnerEmail { get; set; }
+        public string? PartnerName { get; set; }
+        public string? PartnerPhone { get; set; }
+
+
+
     }
 
     public class GenerateTicketsDto

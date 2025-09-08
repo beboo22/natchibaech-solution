@@ -11,7 +11,8 @@ namespace Domain.Entity
         
         public OrderStatus Status { get; set; } = OrderStatus.Pending;
         
-        public int? DiscountCode { get; set; }
+        public int? OrderDiscountCodeId { get; set; }
+        public  OrderDiscountCode OrderDiscountCode { get; set; }
         
         [Column(TypeName = "decimal(18,2)")]
         public decimal TotalAmount { get; set; }
@@ -29,8 +30,8 @@ namespace Domain.Entity
         [MaxLength(50)]
         public string BillingLastName { get; set; } = string.Empty;
         
-        [MaxLength(50)]
-        public string Country { get; set; } = string.Empty;
+        //[MaxLength(50)]
+        //public string Country { get; set; } = string.Empty;
         
         [MaxLength(50)]
         public string IdNumber { get; set; } = string.Empty;

@@ -74,7 +74,7 @@ namespace TicketingSystem.Controllers
                     FullName = createUserDto.FullName,
                     Email = createUserDto.Email,
                     Phone = createUserDto.Phone,
-                    Category = createUserDto.Type
+                    Ssn = createUserDto.Ssn
                 };
 
                 var createdUser = await _userService.CreateUserAsync(user);
@@ -105,7 +105,7 @@ namespace TicketingSystem.Controllers
                 FullName = user.FullName,
                 Email = user.Email,
                 Phone = user.Phone,
-                Category = user.Category,
+                Ssn = user.Ssn,
                 CreatedAt = user.CreatedAt
             };
         }

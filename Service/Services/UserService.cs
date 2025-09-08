@@ -65,7 +65,8 @@ namespace TicketingSystem.Services
             existingUser.FullName = user.FullName;
             existingUser.Email = user.Email;
             existingUser.Phone = user.Phone;
-            existingUser.Category = user.Category;
+            //existingUser.Category = user.Category;
+            existingUser.Ssn = user.Ssn;
 
             await _context.SaveChangesAsync();
             return existingUser;
