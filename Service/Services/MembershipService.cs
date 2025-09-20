@@ -353,7 +353,7 @@ namespace TicketingSystem.Services
 
         public async Task<bool> RevokeMembershipAsync(string Email)
         {
-            var membershipCard = await _context.MemberShips.Include(m=>m.Transactions)
+            var membershipCard = await _context.MemberShips.Include(m=>m.Ticket)
                 .FirstOrDefaultAsync(mc => mc.User.Email == Email);
 
             if (membershipCard == null)
@@ -367,6 +367,7 @@ namespace TicketingSystem.Services
             }catch(Exception ex)
             {
                 Console.WriteLine(ex);
+                return false;
             }
             return true;
         }

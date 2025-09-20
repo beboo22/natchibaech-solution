@@ -4,6 +4,7 @@ using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250910113444_test")]
+    partial class test
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -90,7 +93,7 @@ namespace Infrastructure.Data.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("MemberShips", (string)null);
+                    b.ToTable("MemberShips");
                 });
 
             modelBuilder.Entity("Domain.Entity.MemberShipDiscountCode", b =>
@@ -126,7 +129,7 @@ namespace Infrastructure.Data.Migrations
                     b.HasIndex("Code")
                         .IsUnique();
 
-                    b.ToTable("MemberShipDiscountCodes", (string)null);
+                    b.ToTable("MemberShipDiscountCodes");
                 });
 
             modelBuilder.Entity("Domain.Entity.MembershipCard", b =>
@@ -148,7 +151,7 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("MembershipCards", (string)null);
+                    b.ToTable("MembershipCards");
                 });
 
             modelBuilder.Entity("Domain.Entity.MembershipReviewRequest", b =>
@@ -181,7 +184,7 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("MembershipReviewRequests", (string)null);
+                    b.ToTable("MembershipReviewRequests");
                 });
 
             modelBuilder.Entity("Domain.Entity.Order", b =>
@@ -241,7 +244,7 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Orders", (string)null);
+                    b.ToTable("Orders");
                 });
 
             modelBuilder.Entity("Domain.Entity.OrderDiscountCode", b =>
@@ -277,7 +280,7 @@ namespace Infrastructure.Data.Migrations
                     b.HasIndex("Code")
                         .IsUnique();
 
-                    b.ToTable("OrderDiscountCodes", (string)null);
+                    b.ToTable("OrderDiscountCodes");
                 });
 
             modelBuilder.Entity("Domain.Entity.OrderItem", b =>
@@ -310,7 +313,7 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasIndex("OrderId");
 
-                    b.ToTable("OrderItems", (string)null);
+                    b.ToTable("OrderItems");
                 });
 
             modelBuilder.Entity("Domain.Entity.Ticket", b =>
@@ -377,7 +380,7 @@ namespace Infrastructure.Data.Migrations
                     b.HasIndex("TicketNumber")
                         .IsUnique();
 
-                    b.ToTable("Tickets", (string)null);
+                    b.ToTable("Tickets");
                 });
 
             modelBuilder.Entity("Domain.Entity.Transaction", b =>
@@ -414,7 +417,7 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasIndex("OrderId");
 
-                    b.ToTable("Transactions", (string)null);
+                    b.ToTable("Transactions");
                 });
 
             modelBuilder.Entity("Domain.Entity.User", b =>
@@ -455,7 +458,7 @@ namespace Infrastructure.Data.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("Domain.Entity.MemberShip", b =>
@@ -508,7 +511,7 @@ namespace Infrastructure.Data.Migrations
                     b.HasOne("Domain.Entity.OrderDiscountCode", "OrderDiscountCode")
                         .WithMany("Orders")
                         .HasForeignKey("OrderDiscountCodeId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("Domain.Entity.User", "User")
                         .WithMany("Orders")

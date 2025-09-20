@@ -69,7 +69,7 @@ namespace Infrastructure.Data
                 //      .HasForeignKey(dc => dc.UserId);
                 entity.HasMany(d=>d.MemberShip)
                 .WithOne(m=>m.MemberShipDiscountCode)
-                .HasForeignKey(d=>d.MemberShipDiscountCodeId).OnDelete(DeleteBehavior.NoAction);//while deleting
+                .HasForeignKey(d=>d.MemberShipDiscountCodeId).OnDelete(DeleteBehavior.SetNull);//while deleting
             });
             modelBuilder.Entity<OrderDiscountCode>(entity =>
             {
@@ -80,7 +80,7 @@ namespace Infrastructure.Data
                 //      .HasForeignKey(dc => dc.UserId);
                 entity.HasMany(d=>d.Orders)
                 .WithOne(m=>m.OrderDiscountCode)
-                .HasForeignKey(d=>d.OrderDiscountCodeId).OnDelete(DeleteBehavior.NoAction);//while deleting
+                .HasForeignKey(d=>d.OrderDiscountCodeId).OnDelete(DeleteBehavior.SetNull);//while deleting
             });
 
             // Transaction configurations
@@ -91,7 +91,7 @@ namespace Infrastructure.Data
                       .HasForeignKey(t => t.OrderId);
                 entity.HasOne(m=>m.MemberShip)
                 .WithMany(m=>m.Transactions)
-                .HasForeignKey(m=>m.MemberShipId);
+                .HasForeignKey(m=>m.MemberShipId).OnDelete(DeleteBehavior.SetNull);
             });
 
             // Ticket configurations
@@ -105,7 +105,7 @@ namespace Infrastructure.Data
                       .WithOne(t=>t.Tickets)
                       .HasForeignKey<Ticket>(t => t.OrderItemId).OnDelete(DeleteBehavior.Cascade);
                 entity.HasOne(t => t.MemberShip)
-                      .WithOne()
+                      .WithOne(m=>m.Ticket)
                       .HasForeignKey<Ticket>(t => t.MemberShipId).OnDelete(DeleteBehavior.NoAction);
             });
         }

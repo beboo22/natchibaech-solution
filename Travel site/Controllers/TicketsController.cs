@@ -32,7 +32,7 @@ namespace TicketingSystem.Controllers
                 {
                     foreach (var ticket in tickets)
                     {
-                        await _ticketService.SendTicketAsync(ticket.Id, generateDto?.DeliveryMethod ?? TicketDelivery.Email);
+                        await _ticketService.SendTicketAsync(ticket.Id, generateDto?.DeliveryMethod ?? TicketDelivery.Email, generateDto.Email);
                     }
                 }
                 //use ApiResponse to return the list of tickets
@@ -67,7 +67,7 @@ namespace TicketingSystem.Controllers
                     // Optionally send tickets immediately
                     if (generateDto?.DeliveryMethod != TicketDelivery.None)
                     {
-                        await _ticketService.SendTicketAsync(ticketDtos.Id, generateDto?.DeliveryMethod ?? TicketDelivery.Email);
+                        await _ticketService.SendTicketAsync(ticketDtos.Id, generateDto?.DeliveryMethod ?? TicketDelivery.Email, generateDto.Email);
 
                     }
                     return Ok(new ApiResponse<TicketDto>(200, ticketDtos, "Tickets generated successfully"));
@@ -116,12 +116,32 @@ namespace TicketingSystem.Controllers
         /// <summary>
         /// Get all tickets for a specific user
         /// </summary>
-        [HttpGet("user/{Email}")]
+        [HttpGet("userBookingTickets/{Email}")]
         public async Task<ActionResult<IEnumerable<TicketDto>>> GetUserTickets(string Email)
         {
             try
             {
                 var tickets = await _ticketService.GetUserTicketsAsync(Email);
+                var ticketDtos = tickets.Select(MapToTicketDto);
+                if (!ticketDtos.Any())
+                    return NotFound(new { message = "No tickets found for this user" });
+                //use ApiResponse to return the list of user tickets
+                return Ok(new ApiResponse<IEnumerable<TicketDto>>(200, ticketDtos, "User tickets retrieved successfully"));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while retrieving user tickets", error = ex.Message });
+            }
+        }
+        /// <summary>
+        /// Get all tickets for a specific user
+        /// </summary>
+        [HttpGet("userMembershipTickets/{Email}")]
+        public async Task<ActionResult<IEnumerable<TicketDto>>> GetUserMemberShipsTickets(string Email)
+        {
+            try
+            {
+                var tickets = await _ticketService.GetUserMembershipTicketsAsync(Email);
                 var ticketDtos = tickets.Select(MapToTicketDto);
                 if (!ticketDtos.Any())
                     return NotFound(new { message = "No tickets found for this user" });
@@ -388,13 +408,13 @@ namespace TicketingSystem.Controllers
             return new TicketDto
             {
 
-                OrderId = ticket.OrderItemId??0,
-                UserName = ticket.UserName ??"",
-                OrderNumber = ticket.UserNumber??"",
+                OrderId = ticket.OrderItemId ?? 0,
+                UserName = ticket.UserName ?? "",
+                OrderNumber = ticket.UserNumber ?? "",
 
-                
-                MemberShipId = ticket.MemberShipId??0,
-                MemberName = ticket.MemberName??"",
+
+                MemberShipId = ticket.MemberShipId ?? 0,
+                MemberName = ticket.MemberName ?? "",
                 MembershipNumber = ticket.MembershipNumber ?? "",
                 ExpiryDate = ticket.ExpiryDate,
                 PurchaseDate = ticket.PurchaseDate,
@@ -407,11 +427,11 @@ namespace TicketingSystem.Controllers
                 DeliveryMethod = ticket.DeliveryMethod,
                 SentAt = ticket.SentAt,
                 IsValid = ticket.ExpiryDate > DateTime.UtcNow && ticket.OrderItem?.Order.Status == OrderStatus.Paid,
-               
+
                 UserEmail = ticket.OrderItem?.Order.User?.Email ?? string.Empty,
                 UserPhone = ticket.OrderItem?.Order.User?.Phone ?? string.Empty,
 
-                PartnerEmail = ticket.MemberShip?.PartnerEmail ??null,
+                PartnerEmail = ticket.MemberShip?.PartnerEmail ?? null,
                 PartnerName = ticket.MemberShip?.PartnerName ?? null,
                 PartnerPhone = ticket.MemberShip?.PartnerPhone ?? null,
             };

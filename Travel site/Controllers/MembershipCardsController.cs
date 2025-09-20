@@ -164,14 +164,14 @@ namespace TicketingSystem.Controllers
             {
                 var membershipCard = await _membershipService.GetMembershipAsync(Email);
                 if (membershipCard == null)
-                    return NotFound(new { message = "Membership card not found" });
+                    return NotFound(new { message = "Membership not found" });
 
                 var membershipCardDto = MapToMembershipCardDtoAsync(membershipCard);
                 return Ok(new ApiResponse<MembershipDto>(200, membershipCardDto));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while retrieving the membership card", error = ex.Message });
+                return StatusCode(500, new { message = "An error occurred while retrieving the membership", error = ex.Message });
             }
         }
 
@@ -321,7 +321,7 @@ namespace TicketingSystem.Controllers
                 if (!success)
                     return NotFound(new { message = "Membership  not found" });
 
-                return Ok(new { message = "Membership card revoked successfully" });
+                return Ok(new { message = "Membership revoked successfully" });
             }
             catch (Exception ex)
             {

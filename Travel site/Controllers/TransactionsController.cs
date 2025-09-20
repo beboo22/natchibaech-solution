@@ -271,7 +271,7 @@ namespace TicketingSystem.Controllers
         [HttpGet("paymob/PaymentResult")]
         public IActionResult PaymentResult([FromQuery] string success, [FromQuery] string merchant_order_id)
         {
-            return Redirect("https://natchibaech.com/");
+            return Redirect("https://natchibaech.com/payment/return");
         }
 
 

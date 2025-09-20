@@ -2,6 +2,7 @@ using Domain.Entity;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using System.Linq;
 
 namespace TicketingSystem.Services
 {
@@ -98,12 +99,21 @@ namespace TicketingSystem.Services
                 throw new InvalidOperationException("Order must be paid before generating tickets");
 
             // Check if tickets already exist for this order
+            var orderItemIds = order.OrderItems.Select(oi => oi.Id).ToList();
+
             var existingTickets = await _context.Tickets
-                .Where(t => t.OrderItem.Order.Id == orderId)
+                .Where(t => orderItemIds.Contains(t.OrderItemId.Value))
                 .ToListAsync();
 
             if (existingTickets.Any())
                 throw new InvalidOperationException("Tickets have already been generated for this order");
+
+            //var existingTickets = await _context.Tickets
+            //    .Where(t => t.OrderItem.Order.Id == orderId)//should check orderitem id??
+            //    .ToListAsync();
+
+            //if (existingTickets.Any())
+            //    throw new InvalidOperationException("Tickets have already been generated for this order");
 
             var tickets = new List<Ticket>();
 
@@ -205,7 +215,55 @@ namespace TicketingSystem.Services
                 .ToListAsync();
 
         }
-        public async Task<bool> SendTicketAsync(int ticketId, TicketDelivery deliveryMethod, string? email = null)
+       
+        public async Task<IEnumerable<Ticket>> GetUserMembershipTicketsAsync(string Email)
+        {
+            //var item = await _context.Orders
+            //   .Include(o=>o.OrderItems)
+            //   .ThenInclude(o=>o.Tickets)
+            //   .Where(o => o.UserId == userId).Select(o=>o.OrderItems.ti).ToListAsync();
+
+
+            //var item = await _context.OrderItems
+            //    .Include(oi => oi.Order)
+            //        .ThenInclude(o => o.User)
+            //    .Include(oi => oi.Tickets)
+            //    .Where(oi => oi.Order.UserId == userId)
+            //    .Select(oi => oi.Tickets)
+            //    .ToListAsync();
+
+
+            //return await _context.Tickets
+            //    .Include(t => t.Order)
+            //        .ThenInclude(o => o.Order)
+            //        .ThenInclude(Order => Order.User)
+            //    //.Include(oi => oi.)
+            //    .Where(t => t.Order.Order.UserId == userId)
+            //    //.OrderByDescending(t => t.PurchaseDate)
+            //    .ToListAsync();            //var item = await _context.OrderItems
+            //    .Include(oi => oi.Order)
+            //        .ThenInclude(o => o.User)
+            //    .Include(oi => oi.Tickets)
+            //    .Where(oi => oi.Order.UserId == userId)
+            //    .Select(oi => oi.Tickets)
+            //    .ToListAsync();
+
+
+            //return await _context.Tickets
+            //    .Include(t => t.Order)
+            //        .ThenInclude(o => o.Order)
+            //        .ThenInclude(Order => Order.User)
+            //    //.Include(oi => oi.)
+            //    .Where(t => t.Order.Order.UserId == userId)
+            //    //.OrderByDescending(t => t.PurchaseDate)
+            //    .ToListAsync();
+            return await _context.Tickets
+                .Where(t => t.MemberShip.UserEmail == Email)
+                .ToListAsync();
+
+        }
+       
+        public async Task<bool> SendTicketAsync(int ticketId, TicketDelivery deliveryMethod, string email)
         {
             var ticket = await _context.Tickets
                 .Include(t => t.OrderItem)
@@ -219,7 +277,7 @@ namespace TicketingSystem.Services
             var user = ticket.OrderItem?.Order.User ?? ticket.MemberShip?.User;
             if (user == null) return false;
 
-            var isCouple = _context.MemberShips
+            var isCouple = _context.MemberShips.Include(m=>m.MembershipCard)
                 .FirstOrDefault(t => t.Id == ticket.MemberShipId)?
                 .MembershipCard.ServiceCategory == ServiceCategory.Couples;
 
@@ -234,13 +292,13 @@ namespace TicketingSystem.Services
                         break;
 
                     case TicketDelivery.Whatsapp:
-                        success = await SendWhatsAppAsync(ticket, user.Phone);
+                        //success = await SendWhatsAppAsync(ticket, user.Phone);
                         break;
 
                     case TicketDelivery.Both:
                         var emailSuccess = await SendEmailAsync(ticket, user.Phone, email, isCouple);
-                        var whatsappSuccess = await SendWhatsAppAsync(ticket, user.Phone);
-                        success = emailSuccess || whatsappSuccess;
+                        //var whatsappSuccess = await SendWhatsAppAsync(ticket, user.Phone);
+                        success = emailSuccess;
                         break;
 
                     case TicketDelivery.None:
@@ -272,11 +330,15 @@ namespace TicketingSystem.Services
                     email,
                     ticket.TicketNumber,
                     ticket.QRCode,
-                    ticket.MemberShip is not null? ticket.MemberName:ticket.UserName,
+                    ticket.MemberShip is not null ? ticket.MemberName : ticket.UserName,
                     ticket.MemberShip?.BookingDate ?? ticket.OrderItem.BookingDate,
-                    ticket.ExpiryDate,
+                    ticket.MemberShip.Expiry,
                     phone,
-                    ticket.MemberShip?.PartnerName);
+                    ticket.MemberShip?.PartnerName,
+                    ticket.MemberShip?.PartnerEmail,
+                    ticket.MemberShip?.PartnerPhone,
+                    ticket.MemberShip?.PartnerSsn,
+                    ticket.MemberShip.User.Ssn);
             }
             else
             {
@@ -286,20 +348,21 @@ namespace TicketingSystem.Services
                     ticket.QRCode,
                     ticket.MemberShip is not null ? ticket.MemberName : ticket.UserName,
                     ticket.MemberShip?.BookingDate ?? ticket.OrderItem.BookingDate,
-                    ticket.ExpiryDate,
-                    phone);
+                    ticket.MemberShip.Expiry,
+                    phone,
+                    ticket.MemberShip.User.Ssn);
             }
         }
 
-        private async Task<bool> SendWhatsAppAsync(Ticket ticket, string phone)
-        {
-            return await _notificationService.SendTicketByWhatsAppAsync(
-                phone,
-                ticket.TicketNumber,
-                ticket.QRCode,
-                ticket.MemberName,
-                ticket.ExpiryDate);
-        }
+        //private async Task<bool> SendWhatsAppAsync(Ticket ticket, string phone)
+        //{
+        //    return await _notificationService.SendTicketByWhatsAppAsync(
+        //        phone,
+        //        ticket.TicketNumber,
+        //        ticket.QRCode,
+        //        ticket.MemberName,
+        //        ticket.ExpiryDate);
+        //}
 
         public async Task<bool> ValidateTicketAsync(string ticketNumber)
         {
@@ -375,7 +438,7 @@ namespace TicketingSystem.Services
                 .ToListAsync();
 
             if (existingTickets.Any())
-                throw new InvalidOperationException("Tickets have already been generated for this order");
+                throw new InvalidOperationException("Tickets have already been generated for this MemberShip");
             var ticketNumber = GenerateTicketNumber();
             var memberName = $"{order.User.FullName}";
             var membershipNumber = GenerateMembershipNumber(order.UserId);

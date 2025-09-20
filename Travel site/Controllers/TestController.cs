@@ -76,11 +76,12 @@ namespace Travel_site.Controllers
         public async Task TestEmail()
         {
             //return Redirect("https://natchibaech.com/");
-            //var qrCodeData = GenerateMembershipQRData("123", "beboo", UserType.male, DateTime.UtcNow.AddYears(1));
-            //var qrCode = _qrCodeService.GenerateQRCode(qrCodeData);
-            //await _notificationService.SendTicketByEmailAsync("dodotarek506@gmail.com", "1333", qrCode, "beboo", DateTime.UtcNow.AddMonths(1));
+            var qrCodeData = GenerateMembershipQRData("123", "beboo", UserType.male, DateTime.UtcNow.AddYears(1));
+            var qrCode = _qrCodeService.GenerateQRCode(qrCodeData);
+            //await _notificationService.SendApprovedEmail("dodotarek506@gmail.com", "beboo");
+            //await _notificationService.SendRejectedEmail("dodotarek506@gmail.com", "beboo");
 
-            //await _ticketService.SendTicketAsync(1, TicketDelivery.Email, "dodotarek506@gmail.com");
+            await _ticketService.SendTicketAsync(28, TicketDelivery.Email, "moammedtareq8@gmail.com");
             //return Redirect("https://natchibaech.com/");
 
         }

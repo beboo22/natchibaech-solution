@@ -37,6 +37,7 @@ namespace Domain.Entity
         // Navigation properties
         public virtual User User { get; set; } = null!;
         public virtual MembershipCard MembershipCard { get; set; } = null!;
+        public virtual Ticket Ticket { get; set; } = null!;
         public virtual ICollection<Transaction> Transactions { get; set; } = null!;
         public virtual MemberShipDiscountCode? MemberShipDiscountCode { get; set; }
     }

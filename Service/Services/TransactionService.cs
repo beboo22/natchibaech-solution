@@ -87,7 +87,7 @@ namespace TicketingSystem.Services
                 .FirstOrDefaultAsync(o => o.Id == MemberShipId);
 
             if (order == null)
-                throw new ArgumentException("MemberShip Card not found");
+                throw new ArgumentException("MemberShip not found");
 
             if (order.Status != OrderStatus.Pending)
                 throw new InvalidOperationException("MemberShip is not in pending status");

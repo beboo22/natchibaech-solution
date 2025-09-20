@@ -102,7 +102,14 @@ namespace Service.Services
                 return false;
 
             _context.MemberShipDiscountCodes.Remove(discountCode);
+            try
+            {
+
             await _context.SaveChangesAsync();
+            }catch(Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
             return true;
         }
 
